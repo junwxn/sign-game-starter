@@ -20,10 +20,14 @@ export interface AttemptResult {
 export type RecognizerEvents = {
   /** Fired when an attempt begins (Enter pressed / signing motion detected). */
   attemptStart: () => void;
+  /** Fired when a live signing candidate fades before it is accepted. */
+  attemptCancel: () => void;
   /** Fired once per attempt with the verdict. */
   attemptResult: (result: AttemptResult) => void;
   /** Optional live preview (typed buffer now; could be "motion detected" later). */
   inputPreview: (text: string) => void;
+  /** A live input source failed after startup and gameplay should pause. */
+  error: (error: Error) => void;
 };
 
 export interface SignRecognizer {

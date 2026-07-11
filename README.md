@@ -1,8 +1,7 @@
 # Sign Game — starter
 
-Falling-word arcade game built against a swappable `SignRecognizer` interface.
-Today the recognizer is a keyboard mock; on integration day it becomes the
-webcam CV pipeline by changing one constructor.
+Falling-word arcade game with two swappable inputs: a keyboard mock and the
+live webcam SgSL recognizer copied from the LaunchPad CV proof of concept.
 
 ## Run it
 
@@ -17,7 +16,12 @@ delay and correct words are sometimes rejected — that's deliberate (see
 sign recognition so the game is tuned for CV from day one.
 
 `?input=keyboard` (default) / `?input=cv` switches the recognizer. CV mode
-shows a "not implemented" message until `LiveRecognizer` exists.
+loads the 11-sign model, asks for webcam access, tracks both hands plus a face
+anchor, and continuously verifies the single orange-highlighted word. Use
+localhost or HTTPS; webcam access is unavailable from an insecure origin.
+The side panel shows a temporary, attributed GIF from the official NTU SgSL
+Sign Bank; those remote references require internet access and should be
+replaced with team-owned recordings before release (see `THIRD_PARTY_ASSETS.md`).
 
 After game over: **R** restarts, **E** downloads the session's attempt log as
 JSONL (raw material for the latency and false-accept evidence later).
@@ -27,15 +31,22 @@ JSONL (raw material for the latency and false-accept evidence later).
 ```
 src/
   config.ts                  every tunable number, keyed by input mode
-  vocab.ts                   placeholder word list (replace with final signs)
+  vocab.ts                   11 labels supported by the trained model
+  signReferences.ts          temporary Sign Bank variant/media mapping
   logging.ts                 JSONL attempt logger
   recognizer/
     types.ts                 THE CONTRACT — game/CV integration boundary
     KeyboardMockRecognizer.ts  typing stand-in with latency + false rejects
-    LiveRecognizer.ts        Yi Da's starting point (roadmap in comments)
+    LiveRecognizer.ts        webcam tracker + streaming model adapter
+  cv/
+    signfeat.js              parity-locked feature extraction/model forward
+    MediaPipeTracker.ts      camera, two-hand and face tracking
+    StreamingVerifier.ts     rolling-window confidence/rejection state machine
   scenes/
     GameScene.ts             spawning, descent, attempt resolution, HUD
   main.ts                    Phaser bootstrap
+public/models/
+  model_signs.json           trained 11-sign MLP + class prototypes
 ```
 
 Rule of thumb: the scene talks only to `SignRecognizer`. If a change requires

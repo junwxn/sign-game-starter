@@ -8,7 +8,9 @@ export type InputMode = 'keyboard' | 'cv';
 
 /** Read ?input=keyboard|cv from the URL. Defaults to keyboard. */
 export const INPUT_MODE: InputMode =
-  new URLSearchParams(window.location.search).get('input') === 'cv' ? 'cv' : 'keyboard';
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('input') === 'cv'
+    ? 'cv'
+    : 'keyboard';
 
 export const GAME = {
   width: 800,
@@ -41,4 +43,18 @@ export const GAME = {
 export const MOCK = {
   latencyMs: 0,       // time between Enter and the verdict
   falseRejectRate: 0.05, // correct word still rejected this often — retry is part of the loop
+} as const;
+
+/** Continuous webcam recognizer settings, copied from the validated CV PoC. */
+export const CV = {
+  modelPath: 'models/model_signs.json',
+  bufferMs: 1800,
+  minFrames: 8,
+  confidenceThreshold: 0.6,
+  minMargin: 0,
+  prototypeRejectOver: 1.15,
+  chargeMs: 450,
+  drainRate: 0.5,
+  rearmBelow: 0.35,
+  idleClearMs: 600,
 } as const;
