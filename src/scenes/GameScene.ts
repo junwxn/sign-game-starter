@@ -77,7 +77,11 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.isGameOver) return;
-    const dy = (GAME.descentSpeed[INPUT_MODE] * delta) / 1000;
+    const speed = Math.min(
+      GAME.descentSpeed[INPUT_MODE] + this.score * GAME.speedRampPerPoint[INPUT_MODE],
+      GAME.maxDescentSpeed[INPUT_MODE],
+    );
+    const dy = (speed * delta) / 1000;
     for (const enemy of [...this.enemies]) {
       if (enemy.dying) continue;
       enemy.container.y += dy;

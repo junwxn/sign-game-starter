@@ -20,6 +20,12 @@ export const GAME = {
   /** enemy descent speed in px/second. */
   descentSpeed: { keyboard: 55, cv: 26 } as Record<InputMode, number>,
 
+  /** extra descent speed (px/s) gained per point scored. */
+  speedRampPerPoint: { keyboard: 0.5, cv: 0.25 } as Record<InputMode, number>,
+
+  /** ceiling on descent speed (px/s) so the ramp can't make the game unwinnable. */
+  maxDescentSpeed: { keyboard: 1000, cv: 100 } as Record<InputMode, number>,
+
   /** max enemies on screen at once. */
   maxEnemies: { keyboard: 4, cv: 3 } as Record<InputMode, number>,
 
@@ -33,6 +39,6 @@ export const GAME = {
  * against these numbers and integration day holds no surprises.
  */
 export const MOCK = {
-  latencyMs: 1500,       // time between Enter and the verdict
-  falseRejectRate: 0.15, // correct word still rejected this often — retry is part of the loop
+  latencyMs: 0,       // time between Enter and the verdict
+  falseRejectRate: 0.05, // correct word still rejected this often — retry is part of the loop
 } as const;
