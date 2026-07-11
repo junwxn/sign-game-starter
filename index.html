@@ -14,17 +14,130 @@
         color: #9aa3c7;
         font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
       }
+      #game-shell {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        line-height: 0;
+      }
       #game { line-height: 0; }
+      #game-side {
+        display: grid;
+        width: 240px;
+        gap: 14px;
+      }
+      #game-side:not(:has(> :not([hidden]))) { display: none; }
+      #sign-reference, #cv-panel {
+        position: relative;
+        width: 240px;
+        overflow: hidden;
+        border: 1px solid #27304c;
+        border-radius: 10px;
+        background: #050710;
+      }
+      #sign-reference[hidden], #cv-panel[hidden] { display: none; }
+      #sign-reference { line-height: 1.35; }
+      #sign-reference-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 9px 10px 7px;
+      }
+      #sign-reference-label { color: #e0a458; font-size: 17px; }
+      #sign-reference-variant { font-size: 10px; }
+      #sign-reference-media-wrap {
+        position: relative;
+        display: grid;
+        min-height: 170px;
+        place-items: center;
+        background: #fff;
+      }
+      #sign-reference-media, #sign-reference-video {
+        display: block;
+        width: 100%;
+        height: 180px;
+        object-fit: contain;
+      }
+      #sign-reference-status {
+        padding: 18px;
+        color: #30384f;
+        text-align: center;
+        font-size: 11px;
+      }
+      #sign-reference-credit {
+        display: block;
+        padding: 8px 10px 10px;
+        color: #9aa3c7;
+        font-size: 9px;
+        line-height: 1.45;
+      }
+      #cv-panel { aspect-ratio: 4 / 3; }
+      #cv-video, #cv-overlay {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+      }
+      #cv-overlay { pointer-events: none; }
+      #cv-state {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        padding: 5px 7px;
+        border-radius: 6px;
+        background: rgb(5 7 16 / 75%);
+        color: #e8ecff;
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      @media (max-width: 1080px) {
+        #game-shell { flex-direction: column; }
+        #game-side {
+          width: auto;
+          grid-template-columns: repeat(2, 200px);
+        }
+        #sign-reference, #cv-panel { width: 200px; }
+      }
       p { font-size: 12px; }
       a { color: #7ee0a3; }
     </style>
   </head>
   <body>
     <div>
-      <div id="game"></div>
+      <div id="game-shell">
+        <div id="game"></div>
+        <div id="game-side">
+          <aside id="sign-reference" hidden aria-label="Current sign reference">
+            <div id="sign-reference-head">
+              <strong id="sign-reference-label"></strong>
+              <span id="sign-reference-variant"></span>
+            </div>
+            <div id="sign-reference-media-wrap">
+              <img id="sign-reference-media" alt="" hidden />
+              <video id="sign-reference-video" autoplay loop muted playsinline hidden></video>
+              <span id="sign-reference-status">loading reference…</span>
+            </div>
+            <small id="sign-reference-credit">
+              Temporary reference: SgSL Sign Bank — SADeaf/NTU ·
+              <a id="sign-reference-source" href="https://blogs.ntu.edu.sg/sgslsignbank/"
+                target="_blank" rel="noopener noreferrer">open official Sign Bank</a>
+            </small>
+          </aside>
+          <aside id="cv-panel" hidden aria-label="Webcam sign tracking preview">
+            <video id="cv-video" autoplay playsinline muted></video>
+            <canvas id="cv-overlay"></canvas>
+            <div id="cv-state">camera off</div>
+          </aside>
+        </div>
+      </div>
       <p>
         input mode: <a href="?input=keyboard">keyboard</a> · <a href="?input=cv">cv</a>
-        &nbsp;—&nbsp; type the word, Enter to attempt · after game over: R restart, E export logs
+        &nbsp;—&nbsp; keyboard: type a word + Enter · CV: sign the orange-highlighted word
+        · after game over: R restart, E export logs
       </p>
     </div>
     <script type="module" src="/src/main.ts"></script>

@@ -5,10 +5,12 @@ import { attemptLogger } from '../logging';
 import { KeyboardMockRecognizer } from '../recognizer/KeyboardMockRecognizer';
 import { LiveRecognizer } from '../recognizer/LiveRecognizer';
 import type { AttemptResult, SignRecognizer } from '../recognizer/types';
+import { showSignReference } from '../signReferences';
 
 interface Enemy {
   word: string;
   container: Phaser.GameObjects.Container;
+  body: Phaser.GameObjects.Rectangle;
   dying: boolean;
 }
 
@@ -18,6 +20,8 @@ export class GameScene extends Phaser.Scene {
   private lives = GAME.startingLives;
   private score = 0;
   private isGameOver = false;
+  private recognizerReady = false;
+  private sceneRun = 0;
 
   private scoreText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
@@ -33,6 +37,9 @@ export class GameScene extends Phaser.Scene {
     this.lives = GAME.startingLives;
     this.score = 0;
     this.isGameOver = false;
+    this.recognizerReady = false;
+    showSignReference(null);
+    const sceneRun = ++this.sceneRun;
 
     // --- HUD ---------------------------------------------------------------
     const mono = { fontFamily: 'ui-monospace, Menlo, monospace' };
@@ -51,20 +58,39 @@ export class GameScene extends Phaser.Scene {
     this.recognizer = INPUT_MODE === 'cv' ? new LiveRecognizer() : new KeyboardMockRecognizer();
     this.recognizer.on('inputPreview', (text) => this.previewText.setText(text));
     this.recognizer.on('attemptStart', () => this.statusText.setText('recognizing…'));
+    this.recognizer.on('attemptCancel', () => this.statusText.setText(''));
     this.recognizer.on('attemptResult', (r) => this.resolveAttempt(r));
-    this.recognizer.start().catch((err: unknown) => {
-      this.statusText.setText(String(err instanceof Error ? err.message : err));
+    this.recognizer.on('error', (error) => {
+      this.recognizerReady = false;
+      this.statusText.setText(error.message);
     });
+    this.statusText.setText(INPUT_MODE === 'cv' ? 'starting camera and sign model…' : '');
+    this.recognizer
+      .start()
+      .then(() => {
+        if (sceneRun !== this.sceneRun || this.isGameOver) return;
+        this.recognizerReady = true;
+        this.statusText.setText('');
+        this.spawnEnemy();
+        this.time.addEvent({
+          delay: GAME.spawnIntervalMs[INPUT_MODE],
+          loop: true,
+          callback: () => {
+            if (this.recognizerReady) this.spawnEnemy();
+          },
+        });
+      })
+      .catch((err: unknown) => {
+        if (sceneRun !== this.sceneRun) return;
+        this.statusText.setText(String(err instanceof Error ? err.message : err));
+      });
     // Release the camera / key listeners when the scene restarts.
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.recognizer.stop());
-
-    // --- Spawning ------------------------------------------------------------
-    this.time.addEvent({
-      delay: GAME.spawnIntervalMs[INPUT_MODE],
-      loop: true,
-      callback: () => this.spawnEnemy(),
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.sceneRun += 1;
+      this.recognizerReady = false;
+      showSignReference(null);
+      this.recognizer.stop();
     });
-    this.spawnEnemy(); // don't make the player wait for the first one
 
     // --- Game-over keys (guarded so typing 'r'/'e' mid-game does nothing) ----
     this.input.keyboard?.on('keydown-R', () => {
@@ -76,7 +102,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    if (this.isGameOver) return;
+    if (this.isGameOver || !this.recognizerReady) return;
     const speed = Math.min(
       GAME.descentSpeed[INPUT_MODE] + this.score * GAME.speedRampPerPoint[INPUT_MODE],
       GAME.maxDescentSpeed[INPUT_MODE],
@@ -112,12 +138,14 @@ export class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x7ee0a3);
     const container = this.add.container(x, -30, [body, label]);
 
-    this.enemies.push({ word, container, dying: false });
+    this.enemies.push({ word, container, body, dying: false });
     this.syncTargets();
   }
 
   private killEnemy(enemy: Enemy): void {
     enemy.dying = true;
+    // Stop listening for this word immediately, rather than after its death tween.
+    this.syncTargets();
     this.score += GAME.pointsPerKill;
     this.scoreText.setText(`score ${this.score}`);
     this.tweens.add({
@@ -146,7 +174,18 @@ export class GameScene extends Phaser.Scene {
 
   /** Tell the recognizer what's on screen — verification, not open-set recognition. */
   private syncTargets(): void {
-    this.recognizer.setActiveTargets(this.enemies.map((e) => e.word));
+    const live = this.enemies.filter((enemy) => !enemy.dying);
+    const cvTarget =
+      INPUT_MODE === 'cv'
+        ? [...live].sort((a, b) => b.container.y - a.container.y)[0]
+        : undefined;
+
+    for (const enemy of this.enemies) {
+      if (enemy === cvTarget) enemy.body.setStrokeStyle(4, 0xe0a458);
+      else enemy.body.setStrokeStyle(2, 0x7ee0a3);
+    }
+    showSignReference(cvTarget?.word ?? null);
+    this.recognizer.setActiveTargets(cvTarget ? [cvTarget.word] : live.map((enemy) => enemy.word));
   }
 
   // --- Attempt resolution ------------------------------------------------------
@@ -187,6 +226,10 @@ export class GameScene extends Phaser.Scene {
 
   private gameOver(): void {
     this.isGameOver = true;
+    this.recognizerReady = false;
+    showSignReference(null);
+    this.recognizer.setActiveTargets([]);
+    this.recognizer.stop();
     this.add
       .rectangle(GAME.width / 2, GAME.height / 2, GAME.width, GAME.height, 0x0b0e1a, 0.75)
       .setDepth(10);
