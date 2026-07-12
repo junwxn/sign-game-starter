@@ -15,7 +15,7 @@ delay and correct words are sometimes rejected — that's deliberate (see
 `src/config.ts`, `MOCK`): the mock imitates the timing and fallibility of real
 sign recognition so the game is tuned for CV from day one.
 
-`?input=keyboard` (default) / `?input=cv` switches the recognizer. CV mode
+`?input=cv` (default) / `?input=keyboard` switches the recognizer. CV mode
 loads the 11-sign model, asks for webcam access, tracks both hands plus a face
 anchor, and continuously verifies the single orange-highlighted word. Use
 localhost or HTTPS; webcam access is unavailable from an insecure origin.

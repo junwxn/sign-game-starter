@@ -104,6 +104,29 @@
       }
       p { font-size: 12px; }
       a { color: #7ee0a3; }
+      #input-mode-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      #input-mode-bar span { font-size: 12px; }
+      .mode-button {
+        padding: 7px 18px;
+        border: 1px solid #27304c;
+        border-radius: 8px;
+        background: #050710;
+        color: #9aa3c7;
+        font-size: 13px;
+        text-decoration: none;
+      }
+      .mode-button:hover { border-color: #7ee0a3; color: #e8ecff; }
+      .mode-button.active {
+        border-color: #e0a458;
+        background: #2a2010;
+        color: #e0a458;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -134,11 +157,20 @@
           </aside>
         </div>
       </div>
+      <nav id="input-mode-bar" aria-label="Input mode">
+        <span>input mode:</span>
+        <a class="mode-button" id="mode-cv" href="?input=cv">📷 CV (webcam)</a>
+        <a class="mode-button" id="mode-keyboard" href="?input=keyboard">⌨️ Keyboard</a>
+      </nav>
       <p>
-        input mode: <a href="?input=keyboard">keyboard</a> · <a href="?input=cv">cv</a>
-        &nbsp;—&nbsp; keyboard: type a word + Enter · CV: sign the orange-highlighted word
+        keyboard: type a word + Enter · CV: sign the orange-highlighted word
         · after game over: R restart, E export logs
       </p>
+      <script>
+        const mode =
+          new URLSearchParams(location.search).get('input') === 'keyboard' ? 'keyboard' : 'cv';
+        document.getElementById('mode-' + mode).classList.add('active');
+      </script>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

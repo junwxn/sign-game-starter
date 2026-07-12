@@ -6,11 +6,12 @@
 
 export type InputMode = 'keyboard' | 'cv';
 
-/** Read ?input=keyboard|cv from the URL. Defaults to keyboard. */
+/** Read ?input=keyboard|cv from the URL. Defaults to cv. */
 export const INPUT_MODE: InputMode =
-  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('input') === 'cv'
-    ? 'cv'
-    : 'keyboard';
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('input') === 'keyboard'
+    ? 'keyboard'
+    : 'cv';
 
 export const GAME = {
   width: 800,
