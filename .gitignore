@@ -1,51 +1,32 @@
-# --- Node / Vite (game) -----------------------------------------------------
-node_modules/
-dist/
-.vite/
-*.local
-*.tsbuildinfo
-
+# Logs
+logs
+*.log
 npm-debug.log*
+yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# --- Environment & secrets ---------------------------------------------------
-.env
-.env.*
-!.env.example
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
 
-# --- Editors & OS --------------------------------------------------------------
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea/
+.idea
 .DS_Store
-Thumbs.db
-
-# --- Python (CV training side) ------------------------------------------------
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.ipynb_checkpoints/
-
-# --- ML artifacts: big things stay out, evidence stays in ----------------------
-# Raw recordings are too large for git — keep them in shared storage;
-# the committed test_manifest.csv is what makes the frozen set verifiable.
-data/raw/
-data/videos/
-*.mp4
-*.mov
-*.webm
-
-# Training checkpoints stay out. The small exported model the browser ships
-# (.onnx / .tflite / tfjs files, e.g. under public/models/) is NOT ignored —
-# commit it, it's part of the app.
-checkpoints/
-runs/
-*.pt
-*.ckpt
-
-# --- Deliberately tracked (do not add rules for these) -------------------------
-#   test_manifest.csv · results/predictions.csv · metrics.json
-#   docs/decisions.md · sample session .jsonl logs · eval figures
-# These are the claims→evidence chain; committing them is the point.
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
