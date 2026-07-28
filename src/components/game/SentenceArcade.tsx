@@ -1,0 +1,437 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Heart, Lightbulb, Pause } from "lucide-react";
+import {
+  CoachBubble,
+  CrystalZone,
+  FloatingText,
+  GameButton,
+  Hero,
+  HudChip,
+  IconButton,
+  Scene,
+  type HeroState,
+} from "@/components/game/kit";
+import { DevPanel, MockCamera, type RecogStatus } from "@/components/game/InputPanel";
+import { HintOverlay, PauseOverlay } from "@/components/game/Overlays";
+import { SignToken } from "@/components/game/SentencePath";
+import { pick, enemyArt, type Difficulty, type InputMode } from "@/game/data";
+import { useTicker } from "@/game/engine";
+import {
+  MAX_SENTENCE_ENEMIES,
+  makeSentenceEnemy,
+  type SentenceEnemy,
+} from "@/game/sentenceEngine";
+import { SENTENCE_FEEDBACK, sentenceById, sentenceSignIds, tokenById } from "@/game/sentences";
+import type { Settings } from "@/game/storage";
+import type { SentenceRunResult } from "@/components/game/SentenceResults";
+import { cn } from "@/lib/utils";
+
+const SESSION_SECONDS = 90;
+
+/** Speech-cloud sentence creature — its shield segments are the sign stages. */
+export function SentenceEnemySprite({
+  enemy,
+  active,
+  style,
+}: {
+  enemy: SentenceEnemy;
+  active?: boolean;
+  style?: React.CSSProperties;
+}) {
+  const remaining = enemy.sequence.length - enemy.stage;
+  const meaning = sentenceById(enemy.sentenceId).englishMeaning;
+  return (
+    <div
+      className={cn(
+        "absolute flex w-[16rem] flex-col items-center sm:w-[20rem]",
+        enemy.status === "defeated" && "anim-pop",
+        enemy.status === "hit" && "anim-shake",
+      )}
+      style={style}
+    >
+      <div className="panel w-full !rounded-[1.6rem] px-2 py-1.5">
+        <p className="truncate text-center font-display text-[0.7rem] font-black uppercase tracking-widest">
+          {meaning}
+        </p>
+        <ol className="mt-1 flex items-stretch justify-center gap-0.5 overflow-x-auto">
+          {enemy.sequence.map((t, i) => (
+            <li key={i} className="flex items-center gap-0.5">
+              <SignToken
+                tokenId={t}
+                size="sm"
+                state={
+                  i < enemy.stage
+                    ? "done"
+                    : i === enemy.stage && active
+                      ? "current"
+                      : i === enemy.stage
+                        ? "todo"
+                        : "locked"
+                }
+              />
+              {i < enemy.sequence.length - 1 && (
+                <span aria-hidden className="font-display text-sm font-black text-ink/70">
+                  →
+                </span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className={cn("relative mt-1 grid place-items-center", active && "anim-target")}>
+        {enemy.fromOpponent && (
+          <span
+            aria-hidden
+            className="absolute inset-[-6px] rounded-full border-[3px] border-dashed border-magic"
+          />
+        )}
+        <img
+          src={enemyArt[remaining > 3 ? "wave" : remaining > 1 ? "shield" : "basic"]}
+          alt={`Sentence creature carrying ${enemy.sequence.length} signs`}
+          className="h-24 w-24 object-contain drop-shadow"
+        />
+        <span className="word-label absolute -bottom-2 bg-target text-[0.6rem] text-[oklch(0.2_0.05_50)]">
+          {enemy.stage}/{enemy.sequence.length} SIGNS
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function SentenceArcade({
+  inputMode,
+  difficulty,
+  settings,
+  unlockedSentences,
+  onSignAttempt,
+  onFinish,
+  onMenu,
+  onOpenSettings,
+  onRestart,
+}: {
+  inputMode: InputMode;
+  difficulty: Difficulty;
+  settings: Settings;
+  unlockedSentences: string[];
+  onSignAttempt: (signId: string, correct: boolean, confidence: number) => void;
+  onFinish: (r: SentenceRunResult) => void;
+  onMenu: () => void;
+  onOpenSettings: () => void;
+  onRestart: () => void;
+}) {
+  const [enemies, setEnemies] = useState<SentenceEnemy[]>(() => [
+    makeSentenceEnemy(unlockedSentences, difficulty, { y: -8 }),
+  ]);
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [time, setTime] = useState(SESSION_SECONDS);
+  const [status, setStatus] = useState<RecogStatus>("framing");
+  const [confidence, setConfidence] = useState(48);
+  const [heroState, setHeroState] = useState<HeroState>("ready");
+  const [coach, setCoach] = useState("Sign the sentence one stage at a time!");
+  const [floats, setFloats] = useState<{ id: number; text: string; tone: "success" | "danger" | "target"; x: number; y: number }[]>([]);
+  const [paused, setPaused] = useState(false);
+  const [hint, setHint] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [crystalFlash, setCrystalFlash] = useState(false);
+  const [sentencesDone, setSentencesDone] = useState(0);
+  const [signsDone, setSignsDone] = useState(0);
+  const [orderOk, setOrderOk] = useState(0);
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [flow, setFlow] = useState(70);
+  const bestRef = useRef<string | undefined>(undefined);
+  const weakRef = useRef<string | undefined>(undefined);
+  const floatId = useRef(0);
+  const finished = useRef(false);
+
+  const running = !paused && !hint;
+  const target = useMemo(
+    () => enemies.filter((e) => e.status === "idle").sort((a, b) => b.y - a.y)[0],
+    [enemies],
+  );
+  const currentToken = target ? tokenById(target.sequence[target.stage]) : null;
+
+  const addFloat = useCallback(
+    (text: string, tone: "success" | "danger" | "target", x = 50, y = 45) => {
+      const id = ++floatId.current;
+      setFloats((f) => [...f, { id, text, tone, x, y }]);
+      setTimeout(() => setFloats((f) => f.filter((i) => i.id !== id)), 1200);
+    },
+    [],
+  );
+
+  const flashHero = useCallback((s: HeroState) => {
+    setHeroState(s);
+    setTimeout(() => setHeroState("ready"), 700);
+  }, []);
+
+  const handleMiss = useCallback(
+    (e?: SentenceEnemy) => {
+      setLives((l) => l - 1);
+      setCombo(0);
+      setFlow((f) => Math.max(10, f - 18));
+      setCrystalFlash(true);
+      setTimeout(() => setCrystalFlash(false), 600);
+      flashHero("damage");
+      setCoach(SENTENCE_FEEDBACK.minor[0]);
+      addFloat("SENTENCE ESCAPED!", "danger", 50, 70);
+      if (e) weakRef.current = e.sentenceId;
+    },
+    [addFloat, flashHero],
+  );
+
+  useTicker(
+    () => {
+      setEnemies((list) => {
+        const moved = list.map((e) => (e.status === "defeated" ? e : { ...e, y: e.y + e.speed }));
+        const gone = moved.filter((e) => e.y >= 78 && e.status !== "defeated");
+        gone.forEach((g) => handleMiss(g));
+        return moved.filter((e) => e.y < 78 && e.status !== "defeated");
+      });
+    },
+    110,
+    running,
+  );
+
+  useTicker(
+    () => {
+      setEnemies((list) =>
+        list.filter((e) => e.status !== "defeated").length >= MAX_SENTENCE_ENEMIES
+          ? list
+          : [...list, makeSentenceEnemy(unlockedSentences, difficulty)],
+      );
+    },
+    difficulty === "hard" ? 5200 : difficulty === "easy" ? 8000 : 6500,
+    running,
+  );
+
+  useTicker(() => setTime((t) => t - 1), 1000, running);
+
+  useTicker(
+    () => {
+      setStatus((s) => (s === "framing" ? "hands" : s));
+      setConfidence((c) => Math.min(88, c + 3));
+    },
+    900,
+    running && inputMode === "camera",
+  );
+
+  const end = useCallback(() => {
+    if (finished.current) return;
+    finished.current = true;
+    const orderPct = orderTotal ? (orderOk / orderTotal) * 100 : 0;
+    onFinish({
+      score,
+      sentencesCompleted: sentencesDone,
+      signsCompleted: signsDone,
+      orderPct,
+      flowScore: flow,
+      bestSentenceId: bestRef.current,
+      weakSentenceId: weakRef.current,
+      hints: hintsUsed,
+      bestCombo,
+      stars: score > 2200 ? 3 : score > 1200 ? 2 : score > 400 ? 1 : 0,
+    });
+  }, [score, sentencesDone, signsDone, orderOk, orderTotal, flow, hintsUsed, bestCombo, onFinish]);
+
+  useEffect(() => {
+    if (lives <= 0 || time <= 0) end();
+  }, [lives, time, end]);
+
+  const resolve = (kind: "correct" | "wrong" | "nohands") => {
+    if (!target || !running) return;
+    if (kind === "nohands") {
+      setStatus("nohands");
+      setCoach("Keep both hands visible!");
+      return;
+    }
+    setOrderTotal((t) => t + 1);
+    if (kind === "wrong") {
+      setStatus("rejected");
+      setConfidence((c) => Math.max(14, c - 20));
+      setFlow((f) => Math.max(10, f - 8));
+      setCombo(0);
+      flashHero("wrong");
+      setCoach(pick(SENTENCE_FEEDBACK.order));
+      addFloat("CHECK THE ORDER!", "danger", target.x + 8, target.y + 12);
+      onSignAttempt(currentToken?.signId ?? target.sequence[target.stage], false, 38);
+      setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "hit" } : e)));
+      setTimeout(
+        () => setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "idle" } : e))),
+        420,
+      );
+      weakRef.current = target.sentenceId;
+      return;
+    }
+
+    /* correct stage */
+    setOrderOk((o) => o + 1);
+    setStatus("accepted");
+    setConfidence(78 + Math.floor(Math.random() * 18));
+    setFlow((f) => Math.min(100, f + 6));
+    setSignsDone((s) => s + 1);
+    onSignAttempt(currentToken?.signId ?? target.sequence[target.stage], true, 82);
+    const nextStage = target.stage + 1;
+    const complete = nextStage >= target.sequence.length;
+    const gained = complete ? 180 + target.sequence.length * 60 + combo * 20 : 60 + combo * 10;
+    setScore((s) => s + gained);
+    addFloat(`+${gained}`, "success", target.x + 8, target.y + 10);
+    if (complete) {
+      const nextCombo = combo + 1;
+      setCombo(nextCombo);
+      setBestCombo((b) => Math.max(b, nextCombo));
+      setSentencesDone((n) => n + 1);
+      bestRef.current = target.sentenceId;
+      flashHero(nextCombo >= 3 ? "combo" : "correct");
+      setCoach(pick(SENTENCE_FEEDBACK.perfect));
+      addFloat(pick(SENTENCE_FEEDBACK.perfect), "target", 44, 30);
+      sentenceSignIds(sentenceById(target.sentenceId)).forEach((id) => onSignAttempt(id, true, 80));
+      setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "defeated" } : e)));
+      setTimeout(() => setEnemies((l) => l.filter((e) => e.id !== target.id)), 420);
+    } else {
+      flashHero("correct");
+      setCoach("Great! Now connect it to the next sign.");
+      setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, stage: nextStage } : e)));
+    }
+  };
+
+  return (
+    <Scene dim={0.12}>
+      <div className="flex h-full flex-col">
+        <div className="flex items-start justify-between gap-2 p-2 sm:p-3">
+          <div className="flex flex-col items-start gap-1">
+            <HudChip label="Score" value={score} tone="target" />
+            <HudChip label="Sentences" value={sentencesDone} />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <HudChip label="Combo" value={`x${combo}`} tone="success" />
+            <HudChip label="Time" value={`${Math.max(0, time)}s`} />
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <div className="hud-chip" aria-label={`${lives} lives remaining`}>
+              {[0, 1, 2].map((i) => (
+                <Heart
+                  key={i}
+                  className={cn("h-4 w-4", i < lives ? "fill-danger text-danger" : "text-cream/35")}
+                  aria-hidden
+                />
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <IconButton
+                label="Hint"
+                className="h-9 w-9"
+                onClick={() => {
+                  setHint(true);
+                  setHintsUsed((h) => h + 1);
+                }}
+              >
+                <Lightbulb className="mx-auto h-4 w-4" aria-hidden />
+              </IconButton>
+              <IconButton label="Pause" className="h-9 w-9" onClick={() => setPaused(true)}>
+                <Pause className="mx-auto h-4 w-4" aria-hidden />
+              </IconButton>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          {enemies.map((e) => (
+            <SentenceEnemySprite
+              key={e.id}
+              enemy={e}
+              active={target?.id === e.id}
+              style={{
+                left: `${e.x}%`,
+                top: `${e.y}%`,
+                transition: "top 110ms linear",
+                zIndex: target?.id === e.id ? 20 : 10,
+                opacity: target?.id === e.id ? 1 : 0.85,
+              }}
+            />
+          ))}
+          {floats.map((f) => (
+            <FloatingText
+              key={f.id}
+              text={f.text}
+              tone={f.tone}
+              style={{ left: `${f.x}%`, top: `${f.y}%` }}
+            />
+          ))}
+          {settings.coachMessages && (
+            <CoachBubble
+              message={coach}
+              className="absolute bottom-16 left-1 z-30 origin-bottom-left scale-90 sm:bottom-2 sm:left-2 sm:scale-100"
+            />
+          )}
+          <Hero
+            state={heroState}
+            className="absolute bottom-0 right-2 z-20 h-32 w-24 sm:h-44 sm:w-32"
+          />
+          <div className="absolute inset-x-0 bottom-0">
+            <CrystalZone health={(lives / 3) * 100} flash={crystalFlash} />
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-end gap-3 p-2 sm:p-3">
+          <div className="flex w-full max-w-2xl items-end gap-3">
+            {inputMode === "camera" && (
+              <div className="w-40 shrink-0 sm:w-52">
+                <MockCamera
+                  status={status}
+                  confidence={confidence}
+                  showConfidence={settings.showConfidence}
+                />
+              </div>
+            )}
+            <div className="min-w-0 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-display text-[0.6rem] font-black uppercase tracking-widest text-cream drop-shadow">
+                  Current stage
+                </span>
+                <span className="word-label bg-target text-sm text-[oklch(0.2_0.05_50)]">
+                  {currentToken?.name ?? "—"}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <GameButton tone="success" onClick={() => resolve("correct")}>
+                  Perform Stage Sign
+                </GameButton>
+                <GameButton tone="danger" onClick={() => resolve("wrong")}>
+                  Wrong Sign
+                </GameButton>
+              </div>
+            </div>
+          </div>
+          <div className="ml-auto">
+            <DevPanel
+              actions={[
+                { label: "Correct Stage", onClick: () => resolve("correct") },
+                { label: "Wrong Stage", onClick: () => resolve("wrong") },
+                { label: "Hands Not Visible", onClick: () => resolve("nohands") },
+                { label: "Miss Sentence", onClick: () => handleMiss(target) },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+
+      {paused && (
+        <PauseOverlay
+          onResume={() => setPaused(false)}
+          onRestart={onRestart}
+          onSettings={onOpenSettings}
+          onMenu={onMenu}
+        />
+      )}
+      {hint && currentToken && (
+        <HintOverlay
+          signId={currentToken.signId ?? "hello"}
+          onClose={() => setHint(false)}
+        />
+      )}
+    </Scene>
+  );
+}
