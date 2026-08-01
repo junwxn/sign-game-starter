@@ -199,6 +199,9 @@ export function MultiResults({
                 className={result.outcome === "defeat" ? "anim-bob" : "opacity-70 saturate-50"}
               />
               <span className="hud-chip text-xs">{result.opponent.name}</span>
+              <span className="hud-chip text-[0.6rem] uppercase">
+                {result.opponent.difficulty} · {result.opponent.style} AI
+              </span>
             </div>
           </div>
 
@@ -238,7 +241,7 @@ export function MultiResults({
               Rematch
             </GameButton>
             <GameButton tone="magic" onClick={onChangeMode}>
-              Change Battle Mode
+              Change AI Mode
             </GameButton>
             <GameButton tone="success" onClick={onLibrary}>
               Sign Library

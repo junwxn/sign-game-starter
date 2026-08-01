@@ -74,7 +74,7 @@ const defaultSave: SaveData = {
   level: 1,
   settings: defaultSettings,
   mastery: {},
-  favourites: ["hello", "help"],
+  favourites: ["good", "coffee"],
   lastSingle: null,
   lastMulti: null,
   localVersus: null,

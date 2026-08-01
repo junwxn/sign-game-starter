@@ -4,14 +4,7 @@ import { GameButton, Meter } from "@/components/game/kit";
 import { cn } from "@/lib/utils";
 
 export type RecogStatus =
-  | "idle"
-  | "framing"
-  | "hands"
-  | "checking"
-  | "accepted"
-  | "almost"
-  | "rejected"
-  | "nohands";
+  "idle" | "framing" | "hands" | "checking" | "accepted" | "almost" | "rejected" | "nohands";
 
 export const statusText: Record<RecogStatus, string> = {
   idle: "Move into frame",

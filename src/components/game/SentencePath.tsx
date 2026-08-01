@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { SignMark, Stars } from "@/components/game/kit";
+import { Stars, VerifiedSignMark } from "@/components/game/kit";
 import { tokenById } from "@/game/sentences";
 import { cn } from "@/lib/utils";
 
@@ -63,9 +63,9 @@ export function SignToken({
         <span>{index !== undefined ? `#${index + 1}` : ""}</span>
         <span>{state === "done" ? "✓" : state === "locked" ? "—" : ""}</span>
       </span>
-      <SignMark
-        signId={tokenId}
+      <VerifiedSignMark
         label={t.name}
+        referenceImage={t.referenceImage}
         locked={state === "locked"}
         size={markSize}
         className={cn(state === "current" && "anim-bob")}

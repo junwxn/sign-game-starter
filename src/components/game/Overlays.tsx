@@ -1,5 +1,5 @@
 import { GameButton, Overlay, SignMark, Stars } from "@/components/game/kit";
-import { CharacterArt, SignPose } from "@/components/game/CharacterArt";
+import { CharacterArt } from "@/components/game/CharacterArt";
 import { signById } from "@/game/data";
 import type { Settings } from "@/game/storage";
 import { cn } from "@/lib/utils";
@@ -49,37 +49,32 @@ export function HintOverlay({ signId, onClose }: { signId: string; onClose: () =
             {sign.name}
           </h2>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="sign-demo-card">
-            <SignPose signId={sign.id} label={sign.name} className="h-40 w-full" />
-            <p>Mascot preview · follow reference</p>
-          </div>
-          {sign.referenceImage ? (
-            <a
-              href={sign.referenceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="sign-demo-card sign-demo-card--verified"
-            >
-              <img
-                src={sign.referenceImage}
-                alt={`${sign.name} reference from the ${sign.referenceLabel}`}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-              <p>Verified reference</p>
-            </a>
-          ) : (
-            <a
-              href={sign.referenceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="sign-demo-card sign-demo-card--lesson"
-            >
-              Open Deaf-led SgSL lesson
-            </a>
-          )}
-        </div>
+        {sign.referenceImage ? (
+          <a
+            href={sign.referenceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="sign-demo-card sign-demo-card--verified"
+          >
+            <img
+              src={sign.referenceImage}
+              alt={`${sign.name} reference from the ${sign.referenceLabel}`}
+              loading="eager"
+              referrerPolicy="no-referrer"
+              className="object-cover object-[center_18%]"
+            />
+            <p>Verified SgSL half-body demonstration</p>
+          </a>
+        ) : (
+          <a
+            href={sign.referenceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="sign-demo-card sign-demo-card--lesson"
+          >
+            Open verified SgSL lesson
+          </a>
+        )}
         <ul className="space-y-2 text-sm font-semibold">
           <li>
             <strong className="font-display uppercase text-target-deep">Hand shape · </strong>

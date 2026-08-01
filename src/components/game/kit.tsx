@@ -1,8 +1,8 @@
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { Gauge, Shield, Sparkles, Waves } from "lucide-react";
 import worldBackground from "@/assets/game-world-background-v2.webp";
-import { CharacterArt, SignPose } from "@/components/game/CharacterArt";
-import type { EnemyKind } from "@/game/data";
+import { CharacterArt } from "@/components/game/CharacterArt";
+import { SIGNS, type EnemyKind } from "@/game/data";
 import { cn } from "@/lib/utils";
 
 /* ---------------- Buttons ---------------- */
@@ -205,16 +205,54 @@ export function SignMark({
   className?: string;
 }) {
   const resolvedId = signId ?? label.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const sign = SIGNS.find((entry) => entry.id === resolvedId);
+  return (
+    <VerifiedSignMark
+      label={label}
+      referenceImage={sign?.referenceImage}
+      locked={locked}
+      size={size}
+      className={className}
+    />
+  );
+}
+
+export function VerifiedSignMark({
+  label,
+  referenceImage,
+  locked = false,
+  size = 56,
+  className,
+}: {
+  label: string;
+  referenceImage?: string;
+  locked?: boolean;
+  size?: number;
+  className?: string;
+}) {
   return (
     <span
       aria-hidden
-      className={cn("sign-mark inline-grid shrink-0 place-items-center", className)}
+      className={cn(
+        "sign-mark inline-grid shrink-0 place-items-center overflow-hidden rounded-xl border-2 border-success/60 bg-white",
+        className,
+      )}
       style={{ width: size, height: size }}
     >
       {locked ? (
         <span className="font-mono text-sm font-black">—</span>
+      ) : referenceImage ? (
+        <img
+          src={referenceImage}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="verified-signer h-full w-full object-cover object-[center_18%]"
+        />
       ) : (
-        <SignPose signId={resolvedId} label={label} />
+        <span className="px-1 text-center font-display text-[0.55rem] font-black uppercase leading-tight">
+          {label}
+        </span>
       )}
     </span>
   );
@@ -248,7 +286,12 @@ const heroBubble: Partial<Record<HeroState, string>> = {
 
 export function Hero({ state = "idle", className }: { state?: HeroState; className?: string }) {
   return (
-    <div className={cn("relative grid aspect-[0.52] select-none place-items-center", className)}>
+    <div
+      className={cn(
+        "relative flex aspect-[0.52] select-none items-center justify-center",
+        className,
+      )}
+    >
       {heroBubble[state] && (
         <span className="word-label absolute -top-2 left-1/2 z-10 -translate-x-1/2 text-xs">
           {heroBubble[state]}
@@ -256,7 +299,7 @@ export function Hero({ state = "idle", className }: { state?: HeroState; classNa
       )}
       <div
         className={cn(
-          "relative grid h-full w-full place-items-center transition-transform duration-300",
+          "relative grid h-full max-w-full shrink-0 aspect-[0.52] place-items-center transition-transform duration-300",
           heroFx[state],
         )}
       >
@@ -347,6 +390,7 @@ export function EnemySprite({
   const EnemyIcon =
     kind === "wave" ? Waves : kind === "shield" ? Shield : kind === "fast" ? Gauge : Sparkles;
   const signId = word.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const sign = SIGNS.find((entry) => entry.id === signId);
   return (
     <div
       className={cn(
@@ -383,12 +427,24 @@ export function EnemySprite({
             fromOpponent ? "sent by your rival" : "field spawn"
           }`}
           className={cn(
-            "enemy-token anim-bob grid h-[72%] w-[72%] place-items-center",
+            "enemy-token anim-bob grid h-[88%] w-[88%] place-items-center",
             `enemy-token--${kind}`,
             active && "enemy-token--active",
           )}
         >
-          <SignPose signId={signId} label={word} className="h-[78%] w-[78%]" />
+          {sign?.referenceImage ? (
+            <img
+              src={sign.referenceImage}
+              alt=""
+              loading="eager"
+              referrerPolicy="no-referrer"
+              className="verified-signer h-full w-full object-cover object-[center_18%]"
+            />
+          ) : (
+            <span className="px-2 text-center font-display text-xs font-black uppercase">
+              {word}
+            </span>
+          )}
           <EnemyIcon
             aria-hidden
             className="absolute right-1 top-1 h-4 w-4 stroke-[2.2] opacity-65"

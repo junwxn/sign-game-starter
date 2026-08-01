@@ -18,9 +18,7 @@ const sid = () => `se${++seq}`;
 
 /** Sentence enemies carry 2–5 sign stages. */
 export function pickSentence(unlockedIds: string[]): SignSentence {
-  const pool = SENTENCES.filter(
-    (s) => s.isUnlocked || unlockedIds.includes(s.id),
-  );
+  const pool = SENTENCES.filter((s) => s.isUnlocked || unlockedIds.includes(s.id));
   const list = pool.length ? pool : SENTENCES;
   return list[Math.floor(Math.random() * list.length)];
 }

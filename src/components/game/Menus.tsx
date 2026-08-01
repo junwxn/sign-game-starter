@@ -134,7 +134,7 @@ export function MainMenu({
           </GameButton>
           <div className="grid w-full grid-cols-2 gap-3">
             <GameButton tone="magic" onClick={onMultiplayer}>
-              <Users className="h-5 w-5" aria-hidden /> Multiplayer
+              <Users className="h-5 w-5" aria-hidden /> Versus
             </GameButton>
             <GameButton tone="neutral" onClick={onLibrary}>
               <Library className="h-5 w-5" aria-hidden /> Signs
@@ -243,6 +243,16 @@ export function ModeSelect({
             onClick={() => onChange({ inputMode: "keyboard" })}
           />
           <DiffPicker value={difficulty} onChange={(d) => onChange({ difficulty: d })} />
+          <p
+            className="rounded-xl border-2 border-magic/30 bg-magic/10 px-3 py-2 text-center text-xs font-bold"
+            aria-live="polite"
+          >
+            {difficulty === "easy"
+              ? "Easy · Training AI · 54–62% target accuracy · 3.2–3.9s reactions"
+              : difficulty === "normal"
+                ? "Normal · Balanced AI · 69–77% target accuracy · 2.2–2.7s reactions"
+                : "Hard · Aggressive AI · 84–91% target accuracy · 1.4–1.8s reactions"}
+          </p>
           <GameButton tone="play" size="lg" className="w-full" onClick={onStart}>
             START GAME
           </GameButton>
@@ -252,7 +262,7 @@ export function ModeSelect({
   );
 }
 
-/* ---------------- Multiplayer menu ---------------- */
+/* ---------------- Versus menu ---------------- */
 
 export function MultiplayerMenu({
   onQuick,
@@ -267,12 +277,12 @@ export function MultiplayerMenu({
     <Scene dim={0.3}>
       <div className="grid h-full place-items-center p-4">
         <div className="anim-scene w-full max-w-md space-y-4 text-center">
-          <h2 className="font-display text-4xl font-black text-cream text-outline">MULTIPLAYER</h2>
+          <h2 className="font-display text-4xl font-black text-cream text-outline">VERSUS</h2>
           <GameButton tone="magic" size="lg" className="w-full" onClick={onQuick}>
-            <Swords className="h-6 w-6" aria-hidden /> Quick Match
+            <Swords className="h-6 w-6" aria-hidden /> AI Challenge
           </GameButton>
           <p className="font-display text-xs font-bold uppercase tracking-widest text-cream/90 drop-shadow">
-            Offline demo — opponent is simulated on this device
+            Single-device CPU opponent · no online matchmaking
           </p>
           <GameButton tone="success" size="lg" className="w-full" onClick={onLocal}>
             <Users className="h-6 w-6" aria-hidden /> Local Versus
@@ -306,7 +316,7 @@ export function BattleModeSelect({
       <div className="grid h-full place-items-center p-4">
         <div className="panel anim-scene w-full max-w-md space-y-3 p-5">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-2xl font-black">Battle type</h2>
+            <h2 className="font-display text-2xl font-black">AI Challenge setup</h2>
             <IconButton label="Back" onClick={onBack}>
               <X className="mx-auto h-5 w-5" aria-hidden />
             </IconButton>
@@ -314,20 +324,20 @@ export function BattleModeSelect({
           <PickCard
             active={battleMode === "normal"}
             title="Normal Battle"
-            desc="Score-focused duel. No attacks — the fastest, most accurate signer wins."
+            desc="Score-focused duel against the CPU. No attacks — accuracy and speed decide the winner."
             icon={<Trophy className="h-5 w-5" aria-hidden />}
             onClick={() => onChange({ battleMode: "normal" })}
           />
           <PickCard
             active={battleMode === "hard"}
             title="Hard Battle"
-            desc="Fast signs and big combos send extra word enemies to your opponent."
+            desc="The aggressive CPU builds combos and sends extra word enemies into your field."
             icon={<Swords className="h-5 w-5" aria-hidden />}
             onClick={() => onChange({ battleMode: "hard" })}
           />
           <DiffPicker value={difficulty} onChange={(d) => onChange({ difficulty: d })} />
           <GameButton tone="play" size="lg" className="w-full" onClick={onStart}>
-            FIND OPPONENT
+            START AI CHALLENGE
           </GameButton>
         </div>
       </div>
@@ -335,7 +345,7 @@ export function BattleModeSelect({
   );
 }
 
-/* ---------------- Matchmaking ---------------- */
+/* ---------------- AI opponent setup ---------------- */
 
 export function Matchmaking({
   difficulty,
@@ -351,9 +361,9 @@ export function Matchmaking({
 
   useEffect(() => {
     const opponent = makeOpponent(difficulty);
-    const t = setInterval(() => setProgress((p) => Math.min(100, p + 4 + Math.random() * 6)), 120);
-    const s = setInterval(() => setSpin((v) => (v + 1) % 6), 260);
-    const done = setTimeout(() => onFound(opponent), 3200);
+    const t = setInterval(() => setProgress((p) => Math.min(100, p + 8 + Math.random() * 8)), 100);
+    const s = setInterval(() => setSpin((v) => (v + 1) % 6), 180);
+    const done = setTimeout(() => onFound(opponent), 1600);
     return () => {
       clearInterval(t);
       clearInterval(s);
@@ -366,8 +376,16 @@ export function Matchmaking({
       <div className="grid h-full place-items-center p-4">
         <div className="anim-scene flex w-full max-w-md flex-col items-center gap-5 text-center">
           <h2 className="font-display text-3xl font-black text-cream text-outline">
-            Finding an opponent…
+            Preparing AI opponent…
           </h2>
+          <span className="hud-chip border-magic text-xs uppercase">
+            {difficulty} CPU ·{" "}
+            {difficulty === "easy"
+              ? "Training"
+              : difficulty === "normal"
+                ? "Balanced"
+                : "Aggressive"}
+          </span>
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-center gap-1">
               <Hero state="ready" className="h-24 w-24" />
@@ -376,7 +394,7 @@ export function Matchmaking({
             <span className="font-display text-4xl font-black text-target text-outline">VS</span>
             <div className="flex flex-col items-center gap-1">
               <Avatar index={spin} size={84} className="anim-bob" />
-              <span className="hud-chip text-xs">? ? ?</span>
+              <span className="hud-chip text-xs">CPU</span>
             </div>
           </div>
           <div className="panel w-full p-3">
@@ -384,7 +402,7 @@ export function Matchmaking({
               <div className="h-full bg-magic transition-all" style={{ width: `${progress}%` }} />
             </div>
             <p className="mt-2 font-display text-xs font-extrabold uppercase tracking-widest">
-              Searching local match queue · simulated opponent
+              Configuring an on-device opponent · no network connection
             </p>
           </div>
           <GameButton tone="danger" onClick={onCancel}>
@@ -403,7 +421,7 @@ export function OpponentFoundCard({ o }: { o: Opponent }) {
       <div className="min-w-0">
         <p className="truncate font-display text-lg font-black leading-tight">{o.name}</p>
         <p className="text-xs font-bold text-muted-foreground">
-          Lv {o.level} · Best {o.best} · {o.accuracy}% acc
+          {o.difficulty.toUpperCase()} CPU · {o.style} · {o.accuracy}% target accuracy
         </p>
       </div>
     </div>

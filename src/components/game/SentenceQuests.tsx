@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, Search, Star } from "lucide-react";
-import { GameButton, IconButton, Scene, SignMark, Stars } from "@/components/game/kit";
+import { GameButton, IconButton, Scene, Stars, VerifiedSignMark } from "@/components/game/kit";
 import { SENTENCES, SENTENCE_CATEGORIES, SENTENCE_REVIEW_NOTE, tokenById } from "@/game/sentences";
 import type { SentenceProgress } from "@/game/storage";
 import { cn } from "@/lib/utils";
@@ -151,7 +151,7 @@ export function SentenceQuests({
               "btn-game !px-3.5 !py-1 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 rounded-full",
               signCountFilter === "All"
                 ? "bg-target text-[oklch(0.2_0.05_50)] scale-105 shadow-md ring-2 ring-cream"
-                : "bg-cream/90 text-ink hover:bg-cream"
+                : "bg-cream/90 text-ink hover:bg-cream",
             )}
           >
             <span>All Signs</span>
@@ -175,14 +175,14 @@ export function SentenceQuests({
                     ? "bg-target text-[oklch(0.2_0.05_50)] scale-105 shadow-md ring-2 ring-cream"
                     : countQty > 0
                       ? "bg-cream text-ink hover:bg-white"
-                      : "bg-cream/50 text-ink/50"
+                      : "bg-cream/50 text-ink/50",
                 )}
               >
                 <span>{count} Signs</span>
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-0.2 text-[0.65rem] font-black",
-                    isSelected ? "bg-ink/20 text-ink" : "bg-ink/10 text-ink"
+                    isSelected ? "bg-ink/20 text-ink" : "bg-ink/10 text-ink",
                   )}
                 >
                   {countQty}
@@ -196,7 +196,9 @@ export function SentenceQuests({
       {/* Active Segregation Status Indicator */}
       {signCountFilter !== "All" && (
         <div className="flex items-center justify-between rounded-xl bg-target/90 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-[oklch(0.2_0.05_50)] shadow">
-          <span>Showing {signCountFilter}-Sign Quests ({list.length})</span>
+          <span>
+            Showing {signCountFilter}-Sign Quests ({list.length})
+          </span>
           <button
             type="button"
             onClick={() => setSignCountFilter("All")}
@@ -233,13 +235,11 @@ export function SentenceQuests({
                   </h3>
                   <button
                     type="button"
-                    onClick={() =>
-                      setSignCountFilter(signCountFilter === count ? "All" : count)
-                    }
+                    onClick={() => setSignCountFilter(signCountFilter === count ? "All" : count)}
                     title={`Click to ${signCountFilter === count ? "show all" : `filter ${count}-sign quests`}`}
                     className={cn(
                       "hud-chip !py-0.5 text-[0.6rem] transition-transform hover:scale-105 cursor-pointer",
-                      signCountFilter === count && "bg-target text-[oklch(0.2_0.05_50)] font-black"
+                      signCountFilter === count && "bg-target text-[oklch(0.2_0.05_50)] font-black",
                     )}
                   >
                     {sentences.length} {sentences.length === 1 ? "quest" : "quests"}
@@ -286,10 +286,10 @@ export function SentenceQuests({
                             {s.signSequence.map((tokenId, tokenIndex) => {
                               const token = tokenById(tokenId);
                               return (
-                                <SignMark
+                                <VerifiedSignMark
                                   key={`${tokenId}-${tokenIndex}`}
-                                  signId={tokenId}
                                   label={token.name}
+                                  referenceImage={token.referenceImage}
                                   size={112}
                                   className="sentence-sign-mark"
                                 />
@@ -304,7 +304,10 @@ export function SentenceQuests({
                           <span className="hud-chip !py-0.5 text-[0.6rem]">{s.difficulty}</span>
                           <span className="hud-chip !py-0.5 text-[0.6rem]">{s.category}</span>
                           {favourites.includes(s.id) && (
-                            <Star className="h-3.5 w-3.5 fill-current text-target-deep" aria-hidden />
+                            <Star
+                              className="h-3.5 w-3.5 fill-current text-target-deep"
+                              aria-hidden
+                            />
                           )}
                         </span>
                         <span className="flex w-full items-center justify-between gap-2 pt-0.5">

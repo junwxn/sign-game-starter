@@ -1,16 +1,7 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, ExternalLink, Search, Star } from "lucide-react";
-import { SignPose } from "@/components/game/CharacterArt";
-import {
-  CoachBubble,
-  GameButton,
-  IconButton,
-  Meter,
-  Scene,
-  SignMark,
-  Stars,
-} from "@/components/game/kit";
-import { MockCamera, type RecogStatus } from "@/components/game/InputPanel";
+import { GuidedPractice } from "@/components/game/GuidedPractice";
+import { GameButton, IconButton, Scene, Stars } from "@/components/game/kit";
 import { SentenceQuests, SegmentedControl } from "@/components/game/SentenceQuests";
 import {
   SentenceQuestDetail,
@@ -20,7 +11,15 @@ import { SIGNS, signById } from "@/game/data";
 import type { Mastery, SentenceProgress, Settings } from "@/game/storage";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES = ["All", "Greetings", "Needs", "Courtesy", "Answers", "People"] as const;
+const CATEGORIES = [
+  "All",
+  "Greetings",
+  "Food & Drink",
+  "Actions",
+  "Time",
+  "Places",
+  "Questions",
+] as const;
 
 export function SignLibrary({
   mastery,
@@ -77,7 +76,6 @@ export function SignLibrary({
         favourite={favourites.includes(openId)}
         settings={settings}
         onToggleFavourite={() => onToggleFavourite(openId)}
-        onAttempt={onAttempt}
         onNavigate={(dir) => {
           const i = SIGNS.findIndex((s) => s.id === openId);
           const next = (i + dir + SIGNS.length) % SIGNS.length;
@@ -211,12 +209,26 @@ export function SignLibrary({
                     weak ? "bg-target text-[oklch(0.2_0.05_50)]" : "bg-cream text-ink",
                   )}
                 >
-                  <SignMark signId={s.id} label={s.name} size={112} />
+                  {s.referenceImage ? (
+                    <img
+                      src={s.referenceImage}
+                      alt={`${s.name} reference from the ${s.referenceLabel}`}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="h-28 w-28 rounded-xl border-2 border-success/60 bg-white object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-28 w-28 flex-col items-center justify-center gap-2 rounded-xl border-2 border-success/60 bg-white/80 p-3 text-center">
+                      <ExternalLink className="h-7 w-7 text-magic" aria-hidden />
+                      <span className="text-[0.65rem] font-black uppercase leading-tight">
+                        Verified SgSL lesson
+                      </span>
+                    </span>
+                  )}
                   <span className="font-display text-base font-black">{s.name}</span>
                   <Stars n={m?.stars ?? 0} />
                   <span className="text-[0.65rem] font-bold uppercase tracking-widest opacity-70">
-                    Best {m?.best ?? 0}%
-                    {favourites.includes(s.id) && " ★"}
+                    Best {m?.best ?? 0}%{favourites.includes(s.id) && " ★"}
                   </span>
                 </button>
               </li>
@@ -234,7 +246,6 @@ function SignDetail({
   favourite,
   settings,
   onToggleFavourite,
-  onAttempt,
   onNavigate,
   onClose,
 }: {
@@ -243,27 +254,11 @@ function SignDetail({
   favourite: boolean;
   settings: Settings;
   onToggleFavourite: () => void;
-  onAttempt: (id: string, correct: boolean, confidence: number) => void;
   onNavigate: (dir: number) => void;
   onClose: () => void;
 }) {
   const sign = signById(signId);
   const [practising, setPractising] = useState(false);
-  const [tries, setTries] = useState(0);
-  const [confidence, setConfidence] = useState(48);
-  const [status, setStatus] = useState<RecogStatus>("hands");
-  const [coach, setCoach] = useState("Ready hands? Shape first, then movement.");
-
-  const attempt = (correct: boolean) => {
-    const conf = correct
-      ? 74 + Math.floor(Math.random() * 24)
-      : 28 + Math.floor(Math.random() * 22);
-    setConfidence(conf);
-    setStatus(correct ? "accepted" : "almost");
-    setTries((t) => t + 1);
-    setCoach(correct ? "Great hand shape!" : "Almost! Try once more.");
-    onAttempt(signId, correct, conf);
-  };
 
   return (
     <Scene dim={0.35}>
@@ -287,39 +282,33 @@ function SignDetail({
 
           <div className="grid gap-3 md:grid-cols-[1.15fr_0.85fr]">
             <div className="panel p-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="sign-demo-card">
-                  <SignPose signId={sign.id} label={sign.name} className="h-48 w-full" />
-                  <p>Mascot preview · follow reference</p>
-                </div>
-                {sign.referenceImage ? (
-                  <a
-                    href={sign.referenceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="sign-demo-card sign-demo-card--verified"
-                  >
-                    <img
-                      src={sign.referenceImage}
-                      alt={`${sign.name} reference from the ${sign.referenceLabel}`}
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
-                    <p>Verified SgSL reference</p>
-                  </a>
-                ) : (
-                  <a
-                    href={sign.referenceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="sign-demo-card sign-demo-card--lesson"
-                  >
-                    <ExternalLink className="h-8 w-8" aria-hidden />
-                    <strong>Open Deaf-led lesson</strong>
-                    <span>Reference media is not redistributed in the game.</span>
-                  </a>
-                )}
-              </div>
+              {sign.referenceImage ? (
+                <a
+                  href={sign.referenceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="sign-demo-card sign-demo-card--verified"
+                >
+                  <img
+                    src={sign.referenceImage}
+                    alt={`${sign.name} reference from the ${sign.referenceLabel}`}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                  <p>Verified SgSL reference</p>
+                </a>
+              ) : (
+                <a
+                  href={sign.referenceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="sign-demo-card sign-demo-card--lesson"
+                >
+                  <ExternalLink className="h-8 w-8" aria-hidden />
+                  <strong>Open verified Deaf-led lesson</strong>
+                  <span>Reference media is not redistributed in the game.</span>
+                </a>
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <Stars n={mastery?.stars ?? 0} size={20} />
                 <span className="hud-chip text-xs">{mastery?.attempts ?? 0} attempts</span>
@@ -354,32 +343,7 @@ function SignDetail({
             </GameButton>
           ) : (
             <div className="panel space-y-3 p-4">
-              <div className="grid gap-3 sm:grid-cols-[16rem_minmax(0,1fr)]">
-                <MockCamera
-                  status={status}
-                  confidence={confidence}
-                  showConfidence={settings.showConfidence}
-                />
-                <div className="space-y-2">
-                  <CoachBubble message={coach} />
-                  <Meter
-                    value={confidence}
-                    label="Confidence"
-                    tone={confidence > 65 ? "success" : "target"}
-                  />
-                  <div className="flex gap-2 text-xs">
-                    <span className="hud-chip">Attempts {tries}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <GameButton tone="success" onClick={() => attempt(true)}>
-                      Correct Attempt
-                    </GameButton>
-                    <GameButton tone="danger" onClick={() => attempt(false)}>
-                      Try Again
-                    </GameButton>
-                  </div>
-                </div>
-              </div>
+              <GuidedPractice key={sign.id} sign={sign} showConfidence={settings.showConfidence} />
               <div className="flex flex-wrap gap-2">
                 <GameButton tone="neutral" onClick={() => onNavigate(-1)}>
                   <ArrowLeft className="h-4 w-4" aria-hidden /> Previous Sign

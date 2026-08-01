@@ -61,15 +61,16 @@ export function SentenceResults({
               </p>
               <div className="mt-1 flex items-center justify-center gap-2">
                 <Stars n={result.stars} size={22} />
-                <span className="hud-chip text-sm">
-                  {result.sentencesCompleted} sentences
-                </span>
+                <span className="hud-chip text-sm">{result.sentencesCompleted} sentences</span>
               </div>
             </div>
             {v && (
               <div className="flex flex-col items-center gap-1">
                 <Avatar index={v.opponent.avatar} size={64} />
                 <span className="hud-chip text-xs">{v.opponent.name}</span>
+                <span className="hud-chip text-[0.6rem] uppercase">
+                  {v.opponent.difficulty} · {v.opponent.style} AI
+                </span>
                 <span className="hud-chip text-xs tabular-nums">{v.rivalScore}</span>
               </div>
             )}

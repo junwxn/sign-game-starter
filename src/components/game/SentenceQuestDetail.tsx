@@ -9,8 +9,8 @@ import {
   IconButton,
   Meter,
   Scene,
-  SignMark,
   Stars,
+  VerifiedSignMark,
   type HeroState,
 } from "@/components/game/kit";
 import { DevPanel, MockCamera, type RecogStatus } from "@/components/game/InputPanel";
@@ -19,6 +19,7 @@ import {
   SENTENCE_COACH,
   SENTENCE_FEEDBACK,
   SENTENCE_REVIEW_NOTE,
+  SENTENCE_TOKENS,
   sentenceById,
   sentenceSignIds,
   sentenceStars,
@@ -87,7 +88,6 @@ export function SentenceQuestDetail({
     }, step);
     return () => clearInterval(t);
   }, [playing, slow, seq.length]);
-
 
   const flashHero = useCallback((s: HeroState) => {
     setHeroState(s);
@@ -242,11 +242,16 @@ export function SentenceQuestDetail({
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
                 <div className="panel space-y-2 p-4">
                   <div className="flex items-center gap-3">
-                    <SignMark signId={token.id} label={token.name} size={72} className="anim-bob" />
+                    <VerifiedSignMark
+                      label={token.name}
+                      referenceImage={token.referenceImage}
+                      size={72}
+                      className="anim-bob"
+                    />
                     <div>
                       <p className="font-display text-2xl font-black">{token.name}</p>
                       <p className="font-display text-[0.6rem] font-bold uppercase tracking-widest text-muted-foreground">
-                        Mascot guide · step {index + 1} of {seq.length}
+                        Verified SgSL guide · step {index + 1} of {seq.length}
                       </p>
                     </div>
                   </div>
@@ -304,11 +309,7 @@ export function SentenceQuestDetail({
                 >
                   Learn Sentence
                 </GameButton>
-                <GameButton
-                  tone="success"
-                  size="lg"
-                  onClick={() => setMode("practice")}
-                >
+                <GameButton tone="success" size="lg" onClick={() => setMode("practice")}>
                   Practise Full Sentence
                 </GameButton>
                 <GameButton tone="magic" onClick={() => setMode("build")}>
@@ -339,7 +340,12 @@ export function SentenceQuestDetail({
                     Sign {index + 1} of {seq.length} · “{sentence.englishMeaning}”
                   </p>
                   <div className="flex items-center gap-3">
-                    <SignMark signId={token.id} label={token.name} size={72} className="anim-bob" />
+                    <VerifiedSignMark
+                      label={token.name}
+                      referenceImage={token.referenceImage}
+                      size={72}
+                      className="anim-bob"
+                    />
                     <p className="font-display text-3xl font-black">{token.name}</p>
                   </div>
                   <p className="text-sm font-semibold">
@@ -844,8 +850,8 @@ function MissingSignGame({
     [round, sentenceId],
   );
   const choices = useMemo(() => {
-    const distractors = ["please", "sorry", "yes", "no", "friend", "good", "want", "you", "me"]
-      .filter((d) => !seq.includes(d))
+    const distractors = SENTENCE_TOKENS.map((token) => token.id)
+      .filter((id) => !seq.includes(id))
       .slice(0, 2);
     return shuffle([seq[missingIndex], ...distractors]);
     // eslint-disable-next-line react-hooks/exhaustive-deps

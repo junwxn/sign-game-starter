@@ -179,15 +179,13 @@ export function Battle({
     if (time === 60 || time === 30) setRound((r) => r + 1);
   }, [time]);
 
-  /* ---------- simulated opponent ---------- */
+  /* ---------- on-device AI opponent ---------- */
   useTicker(
     () => {
       if (!running) return;
       const roll = Math.random();
-      const behind = oppScore < score - 400;
-      const skill = opponent.skill + (behind ? 0.08 : 0);
       stats.current.oppTotal += 1;
-      if (roll < skill) {
+      if (roll < opponent.skill) {
         stats.current.oppCorrect += 1;
         setOppCombo((c) => {
           const n = c + 1;
@@ -201,7 +199,7 @@ export function Battle({
         if (hard) setOppMeter((m) => Math.min(100, m + 8));
       }
     },
-    1500 + Math.round(Math.random() * 900),
+    Math.round(opponent.reaction * 1000),
     running,
   );
 
@@ -213,7 +211,7 @@ export function Battle({
     stats.current.oppAttacks += 1;
     stats.current.oppEnemies += count;
     stats.current.attacksReceived += 1;
-    setWarning(count > 1 ? `RIVAL ATTACK · ${count} SIGNS!` : "RIVAL ATTACK · 1 SIGN!");
+    setWarning(count > 1 ? `CPU ATTACK · ${count} SIGNS!` : "CPU ATTACK · 1 SIGN!");
     setAttackFx("in");
     setCoach("Incoming word attack!");
     setTimeout(() => {
@@ -372,7 +370,7 @@ export function Battle({
       summary.push(
         outcome === "victory"
           ? "You won through faster signs."
-          : "Their combos landed more attacks.",
+          : "The CPU's combos landed more attacks.",
       );
       if (bestCombo >= 8) summary.push(`Your x${bestCombo} combo created the deciding attack.`);
       summary.push(
@@ -445,7 +443,9 @@ export function Battle({
             <span className="hud-chip text-lg">{Math.max(0, time)}s</span>
             <span className="hud-chip text-[0.6rem]">ROUND {round}</span>
             <span className="font-display text-xl font-black text-cream text-outline">VS</span>
-            <span className="hud-chip text-[0.6rem]">{hard ? "HARD BATTLE" : "NORMAL BATTLE"}</span>
+            <span className="hud-chip text-[0.6rem]">
+              {difficulty.toUpperCase()} CPU · {hard ? "ATTACK MODE" : "SCORE MODE"}
+            </span>
           </div>
 
           <div className="flex min-w-0 flex-col items-end gap-1">
@@ -457,7 +457,7 @@ export function Battle({
             <HudChip label="Combo" value={`x${oppCombo}`} />
             {hard && (
               <div className="w-36 text-cream drop-shadow sm:w-52">
-                <Meter value={oppMeter} label="Their attack" tone="danger" stages />
+                <Meter value={oppMeter} label="CPU attack" tone="danger" stages />
               </div>
             )}
             {hard && oppIncoming > 0 && (
@@ -471,7 +471,7 @@ export function Battle({
         {/* opponent simplified field */}
         <div className="mx-2 mb-1 flex items-center gap-2 rounded-xl border-[3px] border-ink bg-ink/45 px-2 py-1 backdrop-blur sm:mx-3">
           <span className="font-display text-[0.6rem] font-black uppercase tracking-widest text-cream">
-            Their field
+            CPU field
           </span>
           <div className="relative h-8 flex-1 overflow-hidden rounded-lg bg-cream/15">
             {Array.from({ length: Math.min(5, 2 + Math.floor(oppCombo / 2)) }).map((_, i) => (
@@ -494,7 +494,7 @@ export function Battle({
             {hard ? (
               <>
                 <span className="rounded-full border border-magic bg-magic px-2 py-0.5 font-display text-[0.52rem] font-black uppercase tracking-widest text-cream shadow-sm">
-                  Purple = rival attack
+                  Purple = CPU attack
                 </span>
                 <span className="rounded-full border border-success bg-success px-2 py-0.5 font-display text-[0.52rem] font-black uppercase tracking-widest text-[oklch(0.2_0.05_180)] shadow-sm">
                   Green = field spawn
@@ -502,7 +502,7 @@ export function Battle({
               </>
             ) : (
               <span className="rounded-full border border-cream/40 bg-ink/80 px-2 py-0.5 font-display text-[0.52rem] font-black uppercase tracking-widest text-cream shadow-sm">
-                Normal battle · no rival attacks
+                Score mode · no CPU attacks
               </span>
             )}
           </div>
@@ -669,7 +669,7 @@ export function Battle({
         {warning ?? banner ?? ""}
       </span>
       <span className="sr-only">
-        <Swords aria-hidden /> Simulated opponent controlled by this device
+        <Swords aria-hidden /> {difficulty} difficulty AI opponent controlled by this device
       </span>
     </Scene>
   );

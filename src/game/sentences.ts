@@ -1,35 +1,23 @@
 /**
- * SENTENCE QUEST CONTENT — PLACEHOLDER LEARNING DATA
+ * SENTENCE QUEST CONTENT
  *
- * ⚠️  Sentence examples and sign order should be reviewed by an SgSL expert before release.
- *
- * Singapore Sign Language does NOT always follow written English word order.
- * For that reason every sentence keeps three things separate:
- *   1. `englishMeaning`  — what the sentence means in written English.
- *   2. `signSequence`    — the ordered sign tokens actually performed (editable).
- *   3. `facialExpression` / `bodyMovement` — non-manual grammar guidance.
- *
- * All content below is mock/prototype content. Replace the sequences, notes and
- * mistakes with instructor-reviewed content without touching any UI code.
+ * Every token below comes from the verified SgSL Sign Bank entries in data.ts.
+ * The combinations are progressive practice prompts, but sentence order and
+ * non-manual grammar should still be reviewed by an SgSL expert before release.
  */
 
-import { SIGNS, signById } from "./data";
+import { SIGNS } from "./data";
 
 export type SentenceDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
 export type SentenceCategory =
-  | "Greetings"
-  | "Daily Needs"
-  | "School"
-  | "Food and Drink"
-  | "Asking for Help"
-  | "Friends and Family";
+  "Greetings" | "Food and Drink" | "Daily Routines" | "Going Places" | "Questions";
 
 export interface SignSentence {
   id: string;
   title: string;
   englishMeaning: string;
-  /** Ordered sign-token ids — this is the SgSL order, not the English order. */
+  /** Ordered sign-token ids — this is the practice order, not written English order. */
   signSequence: string[];
   category: SentenceCategory;
   difficulty: SentenceDifficulty;
@@ -40,7 +28,6 @@ export interface SignSentence {
   isUnlocked: boolean;
 }
 
-/** A token inside a sentence. Library signs reuse the existing sign entries. */
 export type SentenceToken = {
   id: string;
   name: string;
@@ -48,163 +35,26 @@ export type SentenceToken = {
   handShape: string;
   movement: string;
   mistake: string;
-  /** Set when this token maps onto a sign in the main Sign Collection. */
+  referenceUrl: string;
+  referenceImage?: string;
+  referenceLabel: string;
   signId?: string;
 };
 
-/** Extra tokens that are not (yet) standalone entries in the Sign Collection. */
-const EXTRA_TOKENS: SentenceToken[] = [
-  {
-    id: "me",
-    name: "Me",
-    emoji: "🙋",
-    handShape: "Index finger extended.",
-    movement: "Point towards your own chest once.",
-    mistake: "Jabbing too hard — keep it a light, single point.",
-  },
-  {
-    id: "you",
-    name: "You",
-    emoji: "👉",
-    handShape: "Index finger extended, palm down.",
-    movement: "Point towards the person you are talking to.",
-    mistake: "Pointing away from the listener's eye line.",
-  },
-  {
-    id: "how",
-    name: "How",
-    emoji: "❓",
-    handShape: "Both hands in Bent-B/5 handshapes, touching palm-down.",
-    movement: "Rotate both hands together until the palms face up.",
-    mistake: "Forgetting the raised-eyebrow question face.",
-  },
-  {
-    id: "what",
-    name: "What",
-    emoji: "🤔",
-    handShape: "Dominant 1-hand above the non-dominant Open-B palm.",
-    movement: "Brush the dominant index fingertip across the upturned palm.",
-    mistake: "Signing it flat with no question expression.",
-  },
-  {
-    id: "where",
-    name: "Where",
-    emoji: "📍",
-    handShape: "Index finger extended, palm forward.",
-    movement: "Shake the finger side to side.",
-    mistake: "Moving the whole arm instead of the wrist.",
-  },
-  {
-    id: "name",
-    name: "Name",
-    emoji: "🏷️",
-    handShape: "Both hands in H-handshapes, index and middle fingers together.",
-    movement: "Cross the H-hands and tap their finger edges together.",
-    mistake: "Crossing the fingers instead of stacking them.",
-  },
-  {
-    id: "alex",
-    name: "Alex (fingerspell)",
-    emoji: "🔤",
-    handShape: "Single-hand manual alphabet.",
-    movement: "Fingerspell A–L–E–X smoothly at shoulder height.",
-    mistake: "Bouncing the hand between every letter.",
-  },
-  {
-    id: "want",
-    name: "Want",
-    emoji: "🫴",
-    handShape: "Both hands start as palm-up 5-hands.",
-    movement: "Pull both hands slightly towards the body while closing to S-hands.",
-    mistake: "Pushing away instead of pulling in.",
-  },
-  {
-    id: "can",
-    name: "Can / Able",
-    emoji: "💪",
-    handShape: "Both hands in S-handshapes, palms facing inward.",
-    movement: "Lower both fists together once while nodding the head.",
-    mistake: "Repeating the press — one firm movement is enough.",
-  },
-  {
-    id: "toilet",
-    name: "Toilet",
-    emoji: "🚻",
-    handShape: "Fist with the thumb between index and middle finger.",
-    movement: "Shake the hand gently side to side.",
-    mistake: "Twisting the wrist in a circle instead of shaking.",
-  },
-  {
-    id: "learn",
-    name: "Learn",
-    emoji: "📚",
-    handShape: "One flat palm up, other hand grasping from it.",
-    movement: "Lift from the palm towards your forehead.",
-    mistake: "Stopping halfway — finish near the head.",
-  },
-  {
-    id: "signlanguage",
-    name: "Sign Language",
-    emoji: "🤟",
-    handShape: "Both index fingers extended.",
-    movement: "Rotate both wrists inward in alternating circles.",
-    mistake: "Circling too small or too fast.",
-  },
-  {
-    id: "school",
-    name: "School",
-    emoji: "🏫",
-    handShape: "Both hands flat; non-dominant palm up and dominant palm down.",
-    movement: "Tap the dominant palm onto the non-dominant palm twice.",
-    mistake: "Clapping loudly — keep it light and controlled.",
-  },
-  {
-    id: "go",
-    name: "Go",
-    emoji: "🚶",
-    handShape: "Both hands in G-handshapes, palms facing each other.",
-    movement: "Move the hands outward from each other in an arch.",
-    mistake: "Signing it in the wrong direction from your body.",
-  },
-  {
-    id: "meet",
-    name: "Meet",
-    emoji: "🫱",
-    handShape: "Both index fingers up, palms facing each other.",
-    movement: "Bring the two hands together until they meet.",
-    mistake: "Letting the hands cross past each other.",
-  },
-  {
-    id: "see",
-    name: "See",
-    emoji: "👀",
-    handShape: "Index and middle finger extended in a V.",
-    movement: "Move the V forward from just below the eyes.",
-    mistake: "Starting too far from the face.",
-  },
-  {
-    id: "tomorrow",
-    name: "Tomorrow",
-    emoji: "🌅",
-    handShape: "Dominant Open-A hand at the side of the lower jaw.",
-    movement: "Brush the hand forward past the lower jaw.",
-    mistake: "Arcing backwards, which reads as 'yesterday'.",
-  },
-];
-
-const LIBRARY_TOKENS: SentenceToken[] = SIGNS.map((s) => ({
-  id: s.id,
-  name: s.name,
-  emoji: s.emoji,
-  handShape: s.handShape,
-  movement: s.movement,
-  mistake: s.mistake,
-  signId: s.id,
+export const SENTENCE_TOKENS: SentenceToken[] = SIGNS.map((sign) => ({
+  id: sign.id,
+  name: sign.name,
+  emoji: sign.emoji,
+  handShape: sign.handShape,
+  movement: sign.movement,
+  mistake: sign.mistake,
+  referenceUrl: sign.referenceUrl,
+  referenceImage: sign.referenceImage,
+  referenceLabel: sign.referenceLabel,
+  signId: sign.id,
 }));
 
-export const SENTENCE_TOKENS: SentenceToken[] = [...LIBRARY_TOKENS, ...EXTRA_TOKENS];
-
-const TOKEN_MAP = new Map(SENTENCE_TOKENS.map((t) => [t.id, t]));
+const TOKEN_MAP = new Map(SENTENCE_TOKENS.map((token) => [token.id, token]));
 
 export function tokenById(id: string): SentenceToken {
   return (
@@ -212,199 +62,253 @@ export function tokenById(id: string): SentenceToken {
       id,
       name: id.toUpperCase(),
       emoji: "🖐️",
-      handShape: "Placeholder hand shape — pending SgSL review.",
-      movement: "Placeholder movement — pending SgSL review.",
-      mistake: "Placeholder note — pending SgSL review.",
+      handShape: "Pending SgSL review.",
+      movement: "Pending SgSL review.",
+      mistake: "This token is not in the selected word bank.",
+      referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/signs/",
+      referenceLabel: "SgSL Sign Bank",
     }
   );
 }
 
-/** Sign ids in the main collection touched by a sentence (for mastery credit). */
 export function sentenceSignIds(sentence: SignSentence): string[] {
-  return sentence.signSequence.map((t) => tokenById(t).signId).filter((s): s is string => !!s);
+  return sentence.signSequence
+    .map((tokenId) => tokenById(tokenId).signId)
+    .filter((signId): signId is string => !!signId);
 }
 
 export const SENTENCE_REVIEW_NOTE =
-  "Sentence examples and sign order should be reviewed by an SgSL expert before release.";
+  "Every word uses a verified SgSL Sign Bank demonstration. Have an SgSL expert review sentence order and non-manual grammar before release.";
 
 export const SENTENCE_CATEGORIES: (SentenceCategory | "All")[] = [
   "All",
   "Greetings",
-  "Daily Needs",
-  "School",
   "Food and Drink",
-  "Asking for Help",
-  "Friends and Family",
+  "Daily Routines",
+  "Going Places",
+  "Questions",
 ];
 
+type SentenceDraft = Pick<
+  SignSentence,
+  "id" | "title" | "englishMeaning" | "signSequence" | "category"
+> &
+  Partial<
+    Pick<
+      SignSentence,
+      "difficulty" | "facialExpression" | "bodyMovement" | "signingNotes" | "commonMistakes"
+    >
+  >;
+
+function quest(draft: SentenceDraft): SignSentence {
+  const isQuestion = draft.signSequence.includes("where");
+  const length = draft.signSequence.length;
+  return {
+    ...draft,
+    difficulty:
+      draft.difficulty ?? (length <= 2 ? "Beginner" : length <= 3 ? "Intermediate" : "Advanced"),
+    facialExpression:
+      draft.facialExpression ??
+      (isQuestion
+        ? "Use a clear question expression and hold it through WHERE."
+        : "Use a natural expression that matches the meaning."),
+    bodyMovement:
+      draft.bodyMovement ?? "Keep the signs clear and connected inside your signing space.",
+    signingNotes: draft.signingNotes ?? [
+      "Learn each verified sign first, then connect the sequence smoothly.",
+      "Practise the displayed order slowly before increasing speed.",
+    ],
+    commonMistakes: draft.commonMistakes ?? [
+      "Rushing the transition between signs.",
+      "Changing a handshape before the previous sign is complete.",
+    ],
+    isUnlocked: true,
+  };
+}
+
 export const SENTENCES: SignSentence[] = [
-  {
-    id: "hello-how-are-you",
-    title: "Friendly Greeting",
-    englishMeaning: "Hello, how are you?",
-    signSequence: ["hello", "you", "how"],
+  quest({
+    id: "good-morning",
+    title: "Good Morning",
+    englishMeaning: "Good morning.",
+    signSequence: ["good", "morning"],
     category: "Greetings",
-    difficulty: "Beginner",
-    facialExpression: "Raised eyebrows and a small smile — this is an open question.",
-    bodyMovement: "Lean very slightly forward towards the person.",
-    signingNotes: [
-      "Question words often sit at the end of the sequence in SgSL.",
-      "Hold the question face until the listener answers.",
-    ],
-    commonMistakes: ["Dropping the question expression", "Rushing straight from HELLO into HOW"],
-    isUnlocked: true,
-  },
-  {
-    id: "my-name-is-alex",
-    title: "Introduce Yourself",
-    englishMeaning: "My name is Alex.",
-    signSequence: ["me", "name", "alex"],
-    category: "Greetings",
-    difficulty: "Beginner",
-    facialExpression: "Neutral, friendly face with steady eye contact.",
-    bodyMovement: "Keep the signing space in front of your chest.",
-    signingNotes: [
-      "Names are usually fingerspelled before a sign name is given.",
-      "Pause slightly before fingerspelling so it is easy to read.",
-    ],
-    commonMistakes: ["Fingerspelling too fast", "Looking away while introducing yourself"],
-    isUnlocked: true,
-  },
-  {
-    id: "nice-to-meet-you",
-    title: "First Handshake",
-    englishMeaning: "Nice to meet you.",
-    signSequence: ["meet", "you", "good"],
-    category: "Greetings",
-    difficulty: "Beginner",
-    facialExpression: "Warm smile, relaxed eyes.",
-    bodyMovement: "Small nod as you finish the phrase.",
-    signingNotes: ["The positive comment often follows the action in SgSL."],
-    commonMistakes: ["Signing MEET with crossed hands", "Finishing with a flat expression"],
-    isUnlocked: true,
-  },
-  {
-    id: "i-would-like-water",
-    title: "Water Please",
-    englishMeaning: "I would like water.",
-    signSequence: ["me", "want", "water"],
-    category: "Daily Needs",
-    difficulty: "Beginner",
-    facialExpression: "Polite, slightly raised brows for a request.",
-    bodyMovement: "Keep hands low and calm — this is a request, not a demand.",
-    signingNotes: ["Adding PLEASE at the end makes the request softer."],
-    commonMistakes: ["Pushing WANT away from the body", "Using a flat hand for WATER"],
-    isUnlocked: true,
-  },
-  {
-    id: "where-is-the-toilet",
+    facialExpression: "Use a warm, friendly expression.",
+  }),
+  quest({
+    id: "want-coffee",
+    title: "Coffee Request",
+    englishMeaning: "I want coffee.",
+    signSequence: ["want", "coffee"],
+    category: "Food and Drink",
+  }),
+  quest({
+    id: "want-eat",
+    title: "Ready to Eat",
+    englishMeaning: "I want to eat.",
+    signSequence: ["want", "eat"],
+    category: "Food and Drink",
+  }),
+  quest({
+    id: "eat-finish",
+    title: "Meal Finished",
+    englishMeaning: "I have finished eating.",
+    signSequence: ["eat", "finish"],
+    category: "Daily Routines",
+  }),
+  quest({
+    id: "coffee-finish",
+    title: "Coffee Finished",
+    englishMeaning: "I have finished my coffee.",
+    signSequence: ["coffee", "finish"],
+    category: "Food and Drink",
+  }),
+  quest({
+    id: "home-go",
+    title: "Going Home",
+    englishMeaning: "I am going home.",
+    signSequence: ["home", "go"],
+    category: "Going Places",
+  }),
+  quest({
+    id: "now-go",
+    title: "Go Now",
+    englishMeaning: "Go now.",
+    signSequence: ["now", "go"],
+    category: "Going Places",
+  }),
+  quest({
+    id: "toilet-where",
     title: "Find the Toilet",
     englishMeaning: "Where is the toilet?",
     signSequence: ["toilet", "where"],
-    category: "Daily Needs",
-    difficulty: "Beginner",
-    facialExpression: "Question face — brows raised, head tilted slightly.",
-    bodyMovement: "Hold the WHERE shake until you get an answer.",
-    signingNotes: ["Topic first, question word last is common in SgSL."],
-    commonMistakes: ["Signing WHERE first, English style", "Dropping the question face"],
-    isUnlocked: true,
-  },
-  {
-    id: "can-you-help-me",
-    title: "Call for Backup",
-    englishMeaning: "Can you help me?",
-    signSequence: ["you", "help", "me", "can"],
-    category: "Asking for Help",
-    difficulty: "Intermediate",
-    facialExpression: "Raised eyebrows throughout — yes/no question.",
-    bodyMovement: "Small forward lean, open shoulders.",
-    signingNotes: ["Directional signs like HELP can move from you towards the other person."],
-    commonMistakes: ["Signing HELP in neutral space", "Forgetting the yes/no question face"],
-    isUnlocked: true,
-  },
-  {
-    id: "i-am-learning-sign-language",
-    title: "Learner's Badge",
-    englishMeaning: "I am learning sign language.",
-    signSequence: ["me", "learn", "signlanguage"],
-    category: "School",
-    difficulty: "Intermediate",
-    facialExpression: "Bright, positive face.",
-    bodyMovement: "Steady rhythm — do not rush the LEARN lift.",
-    signingNotes: ["Time and topic markers can be added at the start of the sequence."],
-    commonMistakes: ["Circling SIGN LANGUAGE too quickly", "Stopping LEARN below the chest"],
-    isUnlocked: true,
-  },
-  {
-    id: "what-is-your-name",
-    title: "Name Exchange",
-    englishMeaning: "What is your name?",
-    signSequence: ["you", "name", "what"],
-    category: "Friends and Family",
-    difficulty: "Beginner",
-    facialExpression: "Raised eyebrows, slight head tilt.",
-    bodyMovement: "Hold the open WHAT hands while waiting for a reply.",
-    signingNotes: ["Question words commonly come last."],
-    commonMistakes: ["Signing WHAT first", "Dropping the hands too early"],
-    isUnlocked: true,
-  },
-  {
-    id: "thank-you-for-helping-me",
-    title: "Gratitude Quest",
-    englishMeaning: "Thank you for helping me.",
-    signSequence: ["you", "help", "me", "thankyou"],
-    category: "Asking for Help",
-    difficulty: "Intermediate",
-    facialExpression: "Sincere smile, gentle nod.",
-    bodyMovement: "Slow the final THANK YOU for emphasis.",
-    signingNotes: ["The thanks usually closes the sequence."],
-    commonMistakes: ["Rushing the final sign", "Ending THANK YOU too high"],
-    isUnlocked: true,
-  },
-  {
-    id: "see-you-tomorrow",
-    title: "Sky Village Farewell",
-    englishMeaning: "See you tomorrow.",
-    signSequence: ["tomorrow", "see", "you"],
-    category: "Friends and Family",
-    difficulty: "Intermediate",
-    facialExpression: "Friendly, relaxed — no question face here.",
-    bodyMovement: "Finish with a small wave if you like.",
-    signingNotes: ["Time markers such as TOMORROW usually come first in SgSL."],
-    commonMistakes: ["Arcing TOMORROW backwards", "Placing the time marker last"],
-    isUnlocked: true,
-  },
-  {
-    id: "i-am-going-to-school",
-    title: "Morning Route",
-    englishMeaning: "I am going to school.",
-    signSequence: ["me", "school", "go"],
-    category: "School",
-    difficulty: "Intermediate",
-    facialExpression: "Neutral statement face.",
-    bodyMovement: "Direct GO towards the imagined location.",
-    signingNotes: ["Destination can be established before the movement verb."],
-    commonMistakes: ["Signing GO in the wrong direction", "Clapping SCHOOL too hard"],
-    isUnlocked: true,
-  },
-  {
-    id: "would-you-like-to-eat",
-    title: "Hawker Invitation",
-    englishMeaning: "Would you like to eat?",
-    signSequence: ["you", "want", "eat"],
+    category: "Questions",
+  }),
+  quest({
+    id: "coffee-where",
+    title: "Find the Coffee",
+    englishMeaning: "Where is the coffee?",
+    signSequence: ["coffee", "where"],
+    category: "Questions",
+  }),
+  quest({
+    id: "home-where",
+    title: "Find Home",
+    englishMeaning: "Where is home?",
+    signSequence: ["home", "where"],
+    category: "Questions",
+  }),
+  quest({
+    id: "now-want-coffee",
+    title: "Coffee Now",
+    englishMeaning: "I want coffee now.",
+    signSequence: ["now", "want", "coffee"],
     category: "Food and Drink",
-    difficulty: "Advanced",
-    facialExpression: "Raised eyebrows — yes/no question, held to the end.",
-    bodyMovement: "Small inviting lean towards the other person.",
-    signingNotes: ["Keep the question face across the whole sequence, not just the last sign."],
-    commonMistakes: ["Dropping the question face early", "Opening the EAT hand too wide"],
-    isUnlocked: true,
-  },
+  }),
+  quest({
+    id: "now-want-eat",
+    title: "Eat Now",
+    englishMeaning: "I want to eat now.",
+    signSequence: ["now", "want", "eat"],
+    category: "Food and Drink",
+  }),
+  quest({
+    id: "now-home-go",
+    title: "Home Now",
+    englishMeaning: "I am going home now.",
+    signSequence: ["now", "home", "go"],
+    category: "Going Places",
+  }),
+  quest({
+    id: "now-toilet-go",
+    title: "Toilet Now",
+    englishMeaning: "I am going to the toilet now.",
+    signSequence: ["now", "toilet", "go"],
+    category: "Going Places",
+  }),
+  quest({
+    id: "morning-want-coffee",
+    title: "Morning Coffee",
+    englishMeaning: "I want coffee in the morning.",
+    signSequence: ["morning", "want", "coffee"],
+    category: "Food and Drink",
+  }),
+  quest({
+    id: "morning-want-eat",
+    title: "Morning Meal",
+    englishMeaning: "I want to eat in the morning.",
+    signSequence: ["morning", "want", "eat"],
+    category: "Daily Routines",
+  }),
+  quest({
+    id: "morning-coffee-finish",
+    title: "Morning Coffee Done",
+    englishMeaning: "I finished my coffee this morning.",
+    signSequence: ["morning", "coffee", "finish"],
+    category: "Daily Routines",
+  }),
+  quest({
+    id: "morning-eat-finish",
+    title: "Morning Meal Done",
+    englishMeaning: "I finished eating this morning.",
+    signSequence: ["morning", "eat", "finish"],
+    category: "Daily Routines",
+  }),
+  quest({
+    id: "good-morning-want-coffee",
+    title: "Good Morning Coffee",
+    englishMeaning: "Good morning. I want coffee.",
+    signSequence: ["good", "morning", "want", "coffee"],
+    category: "Greetings",
+    facialExpression: "Begin with a friendly expression, then shift naturally into the request.",
+  }),
+  quest({
+    id: "good-morning-want-eat",
+    title: "Good Morning Meal",
+    englishMeaning: "Good morning. I want to eat.",
+    signSequence: ["good", "morning", "want", "eat"],
+    category: "Greetings",
+    facialExpression: "Begin with a friendly expression, then shift naturally into the request.",
+  }),
+  quest({
+    id: "coffee-finish-home-go",
+    title: "Coffee Then Home",
+    englishMeaning: "After finishing coffee, I am going home.",
+    signSequence: ["coffee", "finish", "home", "go"],
+    category: "Going Places",
+  }),
+  quest({
+    id: "eat-finish-home-go",
+    title: "Eat Then Home",
+    englishMeaning: "After finishing my meal, I am going home.",
+    signSequence: ["eat", "finish", "home", "go"],
+    category: "Going Places",
+  }),
+  quest({
+    id: "now-toilet-where",
+    title: "Find the Toilet Now",
+    englishMeaning: "Where is the toilet now?",
+    signSequence: ["now", "toilet", "where"],
+    category: "Questions",
+  }),
+  quest({
+    id: "morning-coffee-finish-home-go",
+    title: "Full Morning Route",
+    englishMeaning: "This morning, after finishing coffee, I am going home.",
+    signSequence: ["morning", "coffee", "finish", "home", "go"],
+    category: "Daily Routines",
+  }),
+  quest({
+    id: "morning-eat-finish-home-go",
+    title: "Full Morning Meal Route",
+    englishMeaning: "This morning, after finishing my meal, I am going home.",
+    signSequence: ["morning", "eat", "finish", "home", "go"],
+    category: "Daily Routines",
+  }),
 ];
 
-export const sentenceById = (id: string) => SENTENCES.find((s) => s.id === id)!;
+export const sentenceById = (id: string) => SENTENCES.find((sentence) => sentence.id === id)!;
 
-/** Feedback lines for simulated sequence recognition. */
 export const SENTENCE_FEEDBACK = {
   perfect: ["PERFECT SEQUENCE!", "GREAT FLOW!", "CORRECT ORDER!"],
   minor: ["Almost — one sign was missing.", "Try connecting the signs more smoothly."],
