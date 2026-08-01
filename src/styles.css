@@ -357,9 +357,9 @@
   position: relative;
   overflow: hidden;
   color: var(--ink);
-  background: linear-gradient(145deg, #fff5ee, #eee9ff);
-  border: 1px solid color-mix(in srgb, var(--magic) 28%, white);
-  border-radius: 0.9rem;
+  background: linear-gradient(145deg, #fffaf2, #f5efff);
+  border: 2px solid color-mix(in srgb, var(--magic) 35%, white);
+  border-radius: 1rem;
   box-shadow: var(--shadow-soft);
 }
 
@@ -395,17 +395,12 @@
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  filter: drop-shadow(0 8px 10px color-mix(in srgb, var(--ink) 20%, transparent));
+  filter: drop-shadow(0 6px 8px color-mix(in srgb, var(--ink) 18%, transparent));
 }
 
 .sign-pose--fallback {
   background-position: center !important;
   background-size: contain;
-}
-
-.sentence-sign-mark .sign-pose--fallback {
-  background-position: center 8% !important;
-  background-size: auto 172% !important;
 }
 
 .sign-demo-card {

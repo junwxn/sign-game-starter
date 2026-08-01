@@ -14,6 +14,25 @@ import poseSorry from "@/assets/sign-sorry-v6-normalized.webp";
 import poseThankYou from "@/assets/sign-thankyou-v6-normalized.webp";
 import poseWater from "@/assets/sign-water-v6-normalized.webp";
 import poseYes from "@/assets/sign-yes-v6-normalized.webp";
+
+import poseYou from "@/assets/sign-you-v8-sgsl-halfbody.webp";
+import poseMe from "@/assets/sign-me-v8-sgsl-halfbody.webp";
+import poseHow from "@/assets/sign-how-v8-sgsl-halfbody.webp";
+import poseWhere from "@/assets/sign-where-v8-sgsl-halfbody.webp";
+import poseToilet from "@/assets/sign-toilet-v8-sgsl-halfbody.webp";
+import poseSchool from "@/assets/sign-school-v8-sgsl-halfbody.webp";
+import poseLearn from "@/assets/sign-learn-v8-sgsl-halfbody.webp";
+import poseWhat from "@/assets/sign-what-v8-sgsl-halfbody.webp";
+import poseName from "@/assets/sign-name-v8-sgsl-halfbody.webp";
+import poseWant from "@/assets/sign-want-v8-sgsl-halfbody.webp";
+import poseCan from "@/assets/sign-can-v8-sgsl-halfbody.webp";
+import poseAlex from "@/assets/sign-alex-v8-sgsl-halfbody.webp";
+import poseMeet from "@/assets/sign-meet-v8-sgsl-halfbody.webp";
+import poseSignLanguage from "@/assets/sign-signlanguage-v8-sgsl-halfbody.webp";
+import poseTomorrow from "@/assets/sign-tomorrow-v8-sgsl-halfbody.webp";
+import poseSee from "@/assets/sign-see-v8-sgsl-halfbody.webp";
+import poseGo from "@/assets/sign-go-v8-sgsl-halfbody.webp";
+
 import { cn } from "@/lib/utils";
 
 export const CHARACTERS = [
@@ -73,6 +92,23 @@ const poseMap: Record<string, string> = {
   no: poseNo,
   friend: poseFriend,
   good: poseGood,
+  you: poseYou,
+  me: poseMe,
+  how: poseHow,
+  where: poseWhere,
+  toilet: poseToilet,
+  school: poseSchool,
+  learn: poseLearn,
+  what: poseWhat,
+  name: poseName,
+  want: poseWant,
+  can: poseCan,
+  alex: poseAlex,
+  meet: poseMeet,
+  signlanguage: poseSignLanguage,
+  tomorrow: poseTomorrow,
+  see: poseSee,
+  go: poseGo,
 };
 
 export function SignPose({
@@ -88,11 +124,22 @@ export function SignPose({
   if (!pose) {
     const fallbackIndex = [...signId].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 4;
     return (
-      <CharacterArt
-        index={fallbackIndex}
-        className={cn("sign-pose sign-pose--fallback", className)}
-        label={`${label} mascot preview; reference lesson required`}
-      />
+      <span
+        role="img"
+        aria-label={`${label} mascot preview; reference lesson required`}
+        className={cn(
+          "sign-pose block flex items-center justify-center rounded-xl bg-magic/10 p-1 text-center font-display text-xs font-black text-ink",
+          className,
+        )}
+      >
+        <CharacterArt
+          index={fallbackIndex}
+          className="h-full w-full opacity-90"
+          style={
+            { backgroundPosition: "center 8%", backgroundSize: "contain" } as React.CSSProperties
+          }
+        />
+      </span>
     );
   }
   return (
