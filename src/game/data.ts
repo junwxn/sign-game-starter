@@ -1,250 +1,210 @@
-import type {
-  AchievementData,
-  OpponentData,
-  Progress,
-  SentenceData,
-  Settings,
-  SignData,
-} from "./types";
+export type EnemyKind = "basic" | "fast" | "shield" | "wave";
 
-export const SIGNS: SignData[] = [
+export const enemyMeta: Record<EnemyKind, { name: string; blurb: string; speed: number }> = {
+  basic: { name: "Blob Babbler", blurb: "Round word creature, gentle drift.", speed: 1 },
+  fast: { name: "Swift Whisper", blurb: "Winged speedster with speed lines.", speed: 1.75 },
+  shield: { name: "Bubble Mutterer", blurb: "Bigger, wrapped in a shield bubble.", speed: 0.75 },
+  wave: { name: "Storm Shouter", blurb: "Dramatic wave finale creature.", speed: 0.6 },
+};
+
+export type Sign = {
+  id: string;
+  name: string;
+  category: "Greetings" | "Needs" | "Courtesy" | "Answers" | "People";
+  emoji: string;
+  handShape: string;
+  movement: string;
+  mistake: string;
+  referenceUrl: string;
+  referenceImage?: string;
+  referenceLabel: string;
+};
+
+export const SIGNS: Sign[] = [
   {
     id: "hello",
     name: "Hello",
-    category: "greeting",
-    handShape: "Flat hand, fingers together, palm facing outward near the temple.",
-    movement: "Move the hand outward and slightly down in one relaxed arc.",
-    commonMistake: "Starting too far from the head, which reads as a wave instead.",
-    description:
-      "An open flat hand rises beside the head and sweeps outward, like an easy salute of greeting.",
-    unlockAt: 0,
+    category: "Greetings",
+    emoji: "👋",
+    handShape: "Flat hand, fingers together, palm facing forward.",
+    movement: "Touch the side of your forehead, then move outward in a small arc.",
+    mistake: "Starting too far from the head — begin at the temple.",
+    referenceUrl: "https://www.youtube.com/watch?v=jyOh9Ss7Dzs",
+    referenceLabel: "Deaf-led SgSL lesson",
   },
   {
     id: "water",
     name: "Water",
-    category: "needs",
-    handShape: "Three fingers extended forming a W shape, thumb and little finger folded.",
-    movement: "Tap the index-finger side of the W lightly on the chin twice.",
-    commonMistake: "Tapping the lips instead of the chin.",
-    description: "A W handshape taps twice at the chin, marking a drink of water.",
-    unlockAt: 0,
+    category: "Needs",
+    emoji: "💧",
+    handShape: "Palm-in W-hand, with index, middle and ring fingers extended.",
+    movement: "Tap the index finger of the W-hand against the chin twice.",
+    mistake: "Using the whole flat hand instead of a 'W'.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Water",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_water_v1.1-3401ce.jpg",
+    referenceLabel: "SgSL Sign Bank",
   },
   {
     id: "help",
     name: "Help",
-    category: "needs",
-    handShape: "Closed fist with thumb up, resting on the flat open palm of the other hand.",
-    movement: "Lift both hands upward together as one unit.",
-    commonMistake: "Moving only the fist and leaving the supporting palm behind.",
-    description: "A thumbs-up fist is lifted by the opposite flat palm, showing support.",
-    unlockAt: 0,
+    category: "Needs",
+    emoji: "🆘",
+    handShape: "Open-A hand resting vertically on the non-dominant open palm.",
+    movement: "Push both hands upward together to neck level.",
+    mistake: "Moving only the top hand — lift both as one unit.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Help%20(Verb)",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/2024-02-16/Screenshot-2024-02-16-at-2.42.24%E2%80%AFPM-25f984-698415f6d909d695.png",
+    referenceLabel: "SgSL Sign Bank",
   },
   {
     id: "eat",
     name: "Eat",
-    category: "needs",
-    handShape: "Fingertips and thumb pinched together, pointing toward the mouth.",
-    movement: "Bring the fingertips to the lips twice in a short tapping motion.",
-    commonMistake: "Opening the hand flat, which loses the pinched food shape.",
-    description: "Pinched fingertips tap the lips, as though placing food in the mouth.",
-    unlockAt: 0,
+    category: "Needs",
+    emoji: "🍚",
+    handShape: "A-hand held close to the mouth.",
+    movement: "Rotate the wrist inward near the mouth.",
+    mistake: "Using a pinched handshape instead of the documented A-hand.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Eat",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_eat_v2.1-3c31b2.jpg",
+    referenceLabel: "SgSL Sign Bank",
   },
   {
-    id: "thank-you",
+    id: "thankyou",
     name: "Thank You",
-    category: "courtesy",
-    handShape: "Flat hand, fingers together, palm facing inward at the chin.",
-    movement: "Move the hand forward and down toward the person you thank.",
-    commonMistake: "Using two hands, which changes the meaning.",
-    description: "A flat hand leaves the chin and moves outward in a warm offering motion.",
-    unlockAt: 0,
+    category: "Courtesy",
+    emoji: "🙏",
+    handShape: "Flat hand, fingers together, palm inward.",
+    movement: "From the chin, move the hand forward and slightly down.",
+    mistake: "Ending too high — finish around chest level.",
+    referenceUrl: "https://www.youtube.com/watch?v=jyOh9Ss7Dzs",
+    referenceLabel: "Deaf-led SgSL lesson",
   },
   {
     id: "please",
     name: "Please",
-    category: "courtesy",
-    handShape: "Flat open hand, palm on the centre of the chest.",
-    movement: "Rub the palm in a smooth circle on the chest.",
-    commonMistake: "Patting instead of making a continuous circle.",
-    description: "An open palm circles gently on the chest to soften a request.",
-    unlockAt: 0,
+    category: "Courtesy",
+    emoji: "🤲",
+    handShape: "Flat open palm on the chest.",
+    movement: "Circle the palm clockwise on the chest.",
+    mistake: "Rubbing up and down instead of circling.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Please",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_pleasev1.1-f47ca0.jpg",
+    referenceLabel: "SgSL Sign Bank",
   },
   {
     id: "sorry",
     name: "Sorry",
-    category: "courtesy",
-    handShape: "Closed fist, thumb along the side, placed on the chest.",
-    movement: "Circle the fist on the chest with a regretful facial expression.",
-    commonMistake: "Neutral face — the expression carries the meaning.",
-    description: "A closed fist circles on the chest, paired with an apologetic expression.",
-    unlockAt: 0,
+    category: "Courtesy",
+    emoji: "😔",
+    handShape: "Closed fist, thumb along the side.",
+    movement: "Circle the fist over your chest.",
+    mistake: "Tapping instead of a smooth circle.",
+    referenceUrl: "https://www.youtube.com/watch?v=jyOh9Ss7Dzs",
+    referenceLabel: "Deaf-led SgSL lesson",
   },
   {
     id: "yes",
     name: "Yes",
-    category: "response",
-    handShape: "Closed fist held up in front of the body.",
-    movement: "Nod the fist up and down from the wrist, like a nodding head.",
-    commonMistake: "Moving the whole arm instead of the wrist.",
-    description: "A fist nods from the wrist, mirroring a nodding head.",
-    unlockAt: 0,
+    category: "Answers",
+    emoji: "✅",
+    handShape: "Palm-out Y-hand, with thumb and little finger extended.",
+    movement: "Nod the Y-hand together with the head.",
+    mistake: "Using a closed fist instead of the documented Y-hand.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Yes",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_yesv1.1-d56ce5.jpg",
+    referenceLabel: "SgSL Sign Bank",
   },
   {
     id: "no",
     name: "No",
-    category: "response",
-    handShape: "Index and middle finger extended, meeting the thumb.",
-    movement: "Snap the two fingers down onto the thumb once, crisply.",
-    commonMistake: "Repeating it many times, which reads as scolding.",
-    description: "Two fingers snap closed against the thumb in a single crisp beat.",
-    unlockAt: 300,
+    category: "Answers",
+    emoji: "❌",
+    handShape: "Open-N hand with index and middle fingers extended together.",
+    movement: "Move the fingers down to touch the thumb.",
+    mistake: "Spreading the index and middle fingers apart.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=No",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_nov1.1-55df2a.jpg",
+    referenceLabel: "SgSL Sign Bank",
   },
   {
     id: "friend",
     name: "Friend",
-    category: "people",
-    handShape: "Both index fingers curved into hooks.",
-    movement: "Hook the fingers together, then swap and hook the other way.",
-    commonMistake: "Only hooking once instead of swapping.",
-    description: "Two hooked index fingers link, release and link again the other way.",
-    unlockAt: 600,
+    category: "People",
+    emoji: "🤝",
+    handShape: "One palm-down and one palm-up 1-hand, both index fingers extended.",
+    movement: "Tap the index fingers once, flip both hands, then tap again.",
+    mistake: "Hooking the fingers instead of using the documented tapping movement.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Friend",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_friendv1.1-62bb34.jpg",
+    referenceLabel: "SgSL Sign Bank",
   },
   {
     id: "good",
     name: "Good",
-    category: "response",
-    handShape: "Flat hand, fingers together, palm inward at the chin.",
-    movement: "Move the hand down to land on the opposite open palm.",
-    commonMistake: "Confusing it with Thank You — Good lands on the second hand.",
-    description: "A flat hand drops from the chin onto the waiting opposite palm.",
-    unlockAt: 900,
+    category: "Answers",
+    emoji: "👍",
+    handShape: "Flat hand, fingers together, palm up.",
+    movement: "From the chin, lower into the other open palm.",
+    mistake: "Skipping the landing on the second hand.",
+    referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Good",
+    referenceImage:
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_good_v1.1-341e16.jpg",
+    referenceLabel: "SgSL Sign Bank",
   },
 ];
 
-export const SENTENCES: SentenceData[] = [
-  {
-    id: "greet",
-    meaning: "Hello, how are you?",
-    sequence: ["HELLO", "YOU", "FINE", "QUESTION"],
-    category: "greeting",
-    difficulty: "easy",
-    facialGuidance: "Raised eyebrows on the question, warm smile throughout.",
-    movementNotes: "Keep signing space wide and relaxed; hold the final question beat.",
-    commonMistakes: "Dropping the question expression, which turns it into a statement.",
-  },
-  {
-    id: "name",
-    meaning: "My name is Alex.",
-    sequence: ["ME", "NAME", "A-L-E-X"],
-    category: "greeting",
-    difficulty: "easy",
-    facialGuidance: "Neutral, friendly face; slight nod on the fingerspelled name.",
-    movementNotes: "Fingerspell at a steady rhythm near the shoulder.",
-    commonMistakes: "Rushing the fingerspelling so letters blur together.",
-  },
-  {
-    id: "water",
-    meaning: "I would like water.",
-    sequence: ["ME", "WANT", "WATER"],
-    category: "needs",
-    difficulty: "easy",
-    facialGuidance: "Slightly raised brows and a small forward head tilt for politeness.",
-    movementNotes: "Sign WANT with a small pulling-in motion before WATER.",
-    commonMistakes: "Signing English word order word-for-word instead of the sign sequence.",
-  },
-  {
-    id: "help",
-    meaning: "Can you help me?",
-    sequence: ["YOU", "HELP", "ME", "QUESTION"],
-    category: "question",
-    difficulty: "normal",
-    facialGuidance: "Raised eyebrows held to the end, eye contact maintained.",
-    movementNotes: "Direct HELP from the signer toward yourself to mark who is helped.",
-    commonMistakes: "Forgetting directionality, which loses who helps whom.",
-  },
-  {
-    id: "yourname",
-    meaning: "What is your name?",
-    sequence: ["YOUR", "NAME", "WHAT"],
-    category: "question",
-    difficulty: "normal",
-    facialGuidance: "Furrowed brows for the WH-question, small head tilt forward.",
-    movementNotes: "Hold WHAT slightly longer as the sentence's closing beat.",
-    commonMistakes: "Using raised brows, which marks a yes/no question instead.",
-  },
-  {
-    id: "thanks",
-    meaning: "Thank you for helping me.",
-    sequence: ["YOU", "HELP", "ME", "THANK-YOU"],
-    category: "courtesy",
-    difficulty: "hard",
-    facialGuidance: "Warm smile, gentle nod on THANK-YOU.",
-    movementNotes: "Keep the sequence flowing; do not pause between HELP and ME.",
-    commonMistakes: "Breaking the flow, which makes it read as two separate sentences.",
-  },
+export const signById = (id: string) => SIGNS.find((s) => s.id === id)!;
+
+export const OPPONENT_NAMES = [
+  "SkySigner",
+  "HandHero",
+  "QuickHands",
+  "SignSpark",
+  "WordGuardian",
+  "CloudPlayer",
 ];
 
-export const SGSL_REVIEW_NOTE =
-  "All SgSL signs, sentence order and facial-expression guidance must be reviewed by qualified SgSL users or instructors before release.";
+export type Opponent = {
+  name: string;
+  avatar: number;
+  level: number;
+  best: number;
+  accuracy: number;
+  reaction: number;
+  skill: number;
+};
 
-export const OPPONENTS: OpponentData[] = [
-  { id: "skysigner", name: "SkySigner", hue: 200, style: "Steady and precise" },
-  { id: "handhero", name: "HandHero", hue: 55, style: "Bold combo hunter" },
-  { id: "quickhands", name: "QuickHands", hue: 300, style: "Very fast, sometimes sloppy" },
-  { id: "signspark", name: "SignSpark", hue: 165, style: "Strong late comebacks" },
-];
+export function makeOpponent(difficulty: Difficulty): Opponent {
+  const idx = Math.floor(Math.random() * 6);
+  const skill = difficulty === "easy" ? 0.62 : difficulty === "normal" ? 0.74 : 0.84;
+  return {
+    name: OPPONENT_NAMES[idx],
+    avatar: idx,
+    level: 3 + Math.floor(Math.random() * 22),
+    best: 1200 + Math.floor(Math.random() * 5400),
+    accuracy: Math.round((skill + Math.random() * 0.12) * 100),
+    reaction: (difficulty === "hard" ? 1.5 : 2.3) + Math.random() * 1.4,
+    skill,
+  };
+}
 
-export const ACHIEVEMENTS: AchievementData[] = [
-  { id: "first-sign", name: "First Sign", description: "Complete your very first sign.", icon: "sparkles" },
-  { id: "sentence-starter", name: "Sentence Starter", description: "Finish a full sentence quest.", icon: "quote" },
-  { id: "combo-10", name: "Combo x10", description: "Reach a ten sign combo.", icon: "flame" },
-  { id: "perfect-defence", name: "Perfect Defence", description: "Clear a whole incoming attack wave.", icon: "shield" },
-  { id: "sign-collector", name: "Sign Collector", description: "Unlock every sign in your collection.", icon: "library" },
-];
+export type Difficulty = "easy" | "normal" | "hard";
+export type InputMode = "camera" | "keyboard";
+export type BattleMode = "normal" | "hard";
 
-export const COACH = {
-  intro: ["Ready hands?", "Sign the orange word!", "Protect the crystal!"],
+export const COACH_LINES = {
+  ready: ["Ready hands?", "Sign the orange word!", "Keep both hands visible!"],
   correct: ["Great hand shape!", "Perfect defence!", "Your combo is growing!"],
-  wrong: ["Almost! Try once more.", "Watch the hand shape.", "Slow down, then sign."],
-  miss: ["That one slipped past — keep going!", "Shake it off, next word incoming."],
-  attack: ["Incoming word attack!", "Brace the protection zone!"],
-  results: ["Nice session! Practise your weak signs.", "The words are safe today."],
-  sentence: ["Signs follow their own order — not English order.", "Hold the question expression!"],
+  wrong: ["Almost! Try once more.", "Watch the hand shape!", "Keep both hands visible!"],
+  miss: ["That one slipped through. You've got the next one!"],
+  attack: ["Incoming word attack!", "Brace the crystal!"],
 };
 
-export const ENEMY_WORDS = SIGNS.map((s) => s.name.toUpperCase());
-
-export const DEFAULT_SETTINGS: Settings = {
-  inputStyle: "camera",
-  difficulty: "normal",
-  sound: true,
-  music: true,
-  reducedMotion: false,
-  highContrast: false,
-  coachMessages: true,
-  showConfidence: true,
-  textSize: "md",
-  leftHanded: false,
-};
-
-export const DEFAULT_PROGRESS: Progress = {
-  bestScore: 0,
-  level: 1,
-  streak: 1,
-  signMastery: {},
-  sentenceMastery: {},
-  achievements: [],
-  tutorialDone: false,
-  lastMode: "single",
-  lastDifficulty: "normal",
-  recentResult: null,
-};
-
-export const DIFFICULTY_CONFIG: Record<
-  string,
-  { speed: number; spawn: number; lives: number; label: string }
-> = {
-  easy: { speed: 0.35, spawn: 3200, lives: 5, label: "Easy" },
-  normal: { speed: 0.55, spawn: 2400, lives: 3, label: "Normal" },
-  hard: { speed: 0.85, spawn: 1700, lives: 3, label: "Hard" },
-};
+export const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
