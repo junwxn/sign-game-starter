@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BattleMode, Difficulty, InputMode } from "./data";
 
-export type DisplaySize = "small" | "medium" | "large";
-
 export type Settings = {
   inputMode: InputMode;
   difficulty: Difficulty;
@@ -13,8 +11,6 @@ export type Settings = {
   highContrast: boolean;
   coachMessages: boolean;
   showConfidence: boolean;
-  cameraSize: DisplaySize;
-  exampleSize: DisplaySize;
   character: 0 | 1 | 2 | 3;
 };
 
@@ -66,8 +62,6 @@ export const defaultSettings: Settings = {
   highContrast: false,
   coachMessages: true,
   showConfidence: true,
-  cameraSize: "medium",
-  exampleSize: "medium",
   character: 0,
 };
 
@@ -95,10 +89,14 @@ export function loadSave(): SaveData {
     if (!raw) return defaultSave;
     const parsed = JSON.parse(raw) as Partial<SaveData> & { streak?: number };
     delete parsed.streak;
+    const storedSettings = { ...(parsed.settings ?? {}) } as Partial<Settings> &
+      Record<string, unknown>;
+    delete storedSettings.cameraSize;
+    delete storedSettings.exampleSize;
     return {
       ...defaultSave,
       ...parsed,
-      settings: { ...defaultSettings, ...(parsed.settings ?? {}) },
+      settings: { ...defaultSettings, ...storedSettings },
       mastery: parsed.mastery ?? {},
       sentenceProgress: parsed.sentenceProgress ?? {},
       sentenceFavourites: parsed.sentenceFavourites ?? [],

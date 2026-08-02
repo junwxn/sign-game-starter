@@ -13,7 +13,6 @@ import {
   Stars,
   type HeroState,
 } from "@/components/game/kit";
-import { cameraGridSizeClass, signExampleSizeClass } from "@/components/game/displaySizes";
 import {
   DevPanel,
   LiveCamera,
@@ -592,7 +591,7 @@ function FullSentencePractice({
         <SequenceProgressLine value={done.length} max={seq.length} />
       </div>
 
-      <div className={cn("grid gap-3", cameraGridSizeClass[settings.cameraSize])}>
+      <div className="grid gap-3 sm:grid-cols-[minmax(18rem,30vw)_minmax(0,1fr)]">
         {settings.inputMode === "camera" ? (
           <div className="space-y-2">
             <LiveCamera
@@ -602,11 +601,7 @@ function FullSentencePractice({
               onResult={(result) => performSign(Math.round(result.confidence * 100))}
               onError={() => setStatus("nohands")}
             />
-            <SignReferenceCard
-              signId={currentSignId}
-              size={settings.exampleSize}
-              className={cn("mx-auto", signExampleSizeClass[settings.exampleSize])}
-            />
+            <SignReferenceCard signId={currentSignId} className="mx-auto w-full max-w-sm" />
           </div>
         ) : (
           <div className="panel grid min-h-48 place-items-center p-4 text-center">

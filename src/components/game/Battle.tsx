@@ -14,7 +14,6 @@ import {
   Scene,
   type HeroState,
 } from "@/components/game/kit";
-import { cameraViewSizeClass, signExampleSizeClass } from "@/components/game/displaySizes";
 import {
   DevPanel,
   KeyboardInput,
@@ -587,7 +586,7 @@ export function Battle({
           <div className="w-full max-w-2xl">
             {inputMode === "camera" ? (
               <div className="flex items-end gap-3 overflow-x-auto pb-1">
-                <div className={cn("shrink-0", cameraViewSizeClass[settings.cameraSize])}>
+                <div className="w-[55vw] max-w-80 shrink-0 sm:w-[30vw] sm:max-w-96">
                   <LiveCamera
                     targets={target ? [target.signId] : []}
                     active={running && !!target}
@@ -605,8 +604,7 @@ export function Battle({
                 <div className="space-y-2">
                   <SignReferenceCard
                     signId={target?.signId}
-                    size={settings.exampleSize}
-                    className={signExampleSizeClass[settings.exampleSize]}
+                    className="w-[45vw] max-w-64 sm:w-[28vw] sm:max-w-80"
                   />
                   <span className="word-label block bg-target text-center text-lg text-[oklch(0.2_0.05_50)]">
                     {target?.word ?? "—"}

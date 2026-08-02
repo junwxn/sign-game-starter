@@ -10,7 +10,6 @@ import {
   SignMark,
   Stars,
 } from "@/components/game/kit";
-import { cameraGridSizeClass } from "@/components/game/displaySizes";
 import { LiveCamera, type RecogStatus } from "@/components/game/InputPanel";
 import { SentenceQuests, SegmentedControl } from "@/components/game/SentenceQuests";
 import {
@@ -354,7 +353,7 @@ function SignDetail({
             </GameButton>
           ) : (
             <div className="panel space-y-3 p-4">
-              <div className={cn("grid gap-3", cameraGridSizeClass[settings.cameraSize])}>
+              <div className="grid gap-3 sm:grid-cols-[minmax(18rem,30vw)_minmax(0,1fr)]">
                 {settings.inputMode === "camera" ? (
                   <LiveCamera
                     targets={[signId]}

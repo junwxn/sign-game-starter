@@ -35,16 +35,6 @@ import type { SentenceSessionResult } from "@/components/game/SentenceQuestDetai
 import { cn } from "@/lib/utils";
 
 const SESSION_SECONDS = 90;
-const railCameraSizeClass = {
-  small: "w-3/4",
-  medium: "w-[88%]",
-  large: "w-full",
-};
-const railDemoSizeClass = {
-  small: "w-3/5",
-  medium: "w-4/5",
-  large: "w-full",
-};
 
 /** Speech-cloud sentence creature — its shield segments are the sign stages. */
 export function SentenceEnemySprite({
@@ -395,7 +385,7 @@ export function SentenceArcade({
 
   return (
     <Scene dim={0.12}>
-      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_auto_minmax(32rem,1fr)] overflow-y-auto lg:grid-cols-[clamp(19rem,34vw,28rem)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
+      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_auto_minmax(32rem,1fr)] overflow-y-auto lg:grid-cols-[clamp(20rem,30vw,32rem)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
         <header className="relative z-30 col-start-1 row-start-2 flex flex-wrap items-start justify-between gap-2 p-2 lg:col-start-2 lg:row-start-1 sm:p-3">
           <div className="flex flex-col items-start gap-1">
             <HudChip label="Score" value={score} tone="target" />
@@ -466,7 +456,7 @@ export function SentenceArcade({
               Camera
             </p>
             {inputMode === "camera" ? (
-              <div className={cn("mx-auto", railCameraSizeClass[settings.cameraSize])}>
+              <div className="w-full">
                 <LiveCamera
                   targets={currentToken?.signId ? [currentToken.signId] : []}
                   active={running && !!currentToken?.signId}
@@ -504,13 +494,9 @@ export function SentenceArcade({
             >
               Sign demo
             </p>
-            <div className={cn("mx-auto", railDemoSizeClass[settings.exampleSize])}>
+            <div className="w-full">
               {currentToken?.signId ? (
-                <SignReferenceCard
-                  signId={currentToken.signId}
-                  size={settings.exampleSize}
-                  className="w-full max-w-none"
-                />
+                <SignReferenceCard signId={currentToken.signId} className="w-full max-w-none" />
               ) : (
                 <div className="panel grid min-h-24 place-items-center !rounded-xl p-3 text-center">
                   <p className="font-display text-sm font-black">
