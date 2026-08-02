@@ -294,7 +294,7 @@ export function SentenceArcade({
     if (!target || !running || target.status !== "idle") return;
     if (kind === "nohands") {
       setStatus("nohands");
-      setCoach("Keep both hands visible!");
+      setCoach("Move into frame so the camera can see your sign.");
       return;
     }
     setOrderTotal((t) => t + 1);
@@ -454,7 +454,7 @@ export function SentenceArcade({
         </div>
 
         <div className="flex shrink-0 items-end gap-3 p-2 sm:p-3">
-          <div className="flex w-full max-w-2xl items-end gap-3 overflow-x-auto pb-1">
+          <div className="flex w-full max-w-4xl flex-wrap items-end gap-3 pb-1">
             {inputMode === "camera" && (
               <div className={cn("shrink-0", cameraViewSizeClass[settings.cameraSize])}>
                 <LiveCamera
@@ -479,7 +479,7 @@ export function SentenceArcade({
                 />
               </div>
             )}
-            <div className="min-w-0 space-y-2">
+            <div className="min-w-0 flex-1 basis-48 space-y-2">
               {currentSentence && (
                 <p className="panel line-clamp-2 px-3 py-2 font-display text-sm font-black sm:text-base">
                   {currentSentence.englishMeaning}
@@ -487,7 +487,7 @@ export function SentenceArcade({
               )}
               {target && (
                 <ol
-                  className="panel flex max-w-full items-center gap-1 overflow-x-auto !rounded-xl p-1.5"
+                  className="panel flex max-w-full flex-wrap items-center justify-center gap-1 overflow-hidden !rounded-xl p-1.5"
                   aria-label="Current sentence sign order"
                 >
                   {target.sequence.map((tokenId, index) => (

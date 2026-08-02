@@ -211,7 +211,7 @@ export function SinglePlayer({
     if (kind === "nohands") {
       setStatus("nohands");
       setConfidence((c) => Math.max(10, c - 25));
-      setCoach("Keep both hands visible!");
+      setCoach("Move into frame so the camera can see your sign.");
       return;
     }
     busy.current = true;

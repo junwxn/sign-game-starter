@@ -14,12 +14,12 @@ export type RecogStatus =
 export const statusText: Record<RecogStatus, string> = {
   idle: "Move into frame",
   framing: "Move into frame",
-  hands: "Both hands visible",
+  hands: "Signing hand detected",
   checking: "Checking sign…",
   accepted: "Sign accepted",
   almost: "Almost — try once more",
   rejected: "Try again",
-  nohands: "Keep both hands visible!",
+  nohands: "Move into frame",
 };
 
 const statusTone: Record<RecogStatus, string> = {

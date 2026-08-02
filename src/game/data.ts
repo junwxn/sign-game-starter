@@ -245,9 +245,9 @@ export type InputMode = "camera" | "keyboard";
 export type BattleMode = "normal" | "hard";
 
 export const COACH_LINES = {
-  ready: ["Ready hands?", "Sign the orange word!", "Keep both hands visible!"],
+  ready: ["Ready hands?", "Sign the orange word!", "Keep your signing hand in frame!"],
   correct: ["Great hand shape!", "Perfect defence!", "Your combo is growing!"],
-  wrong: ["Almost! Try once more.", "Watch the hand shape!", "Keep both hands visible!"],
+  wrong: ["Almost! Try once more.", "Watch the hand shape!", "Stay inside the camera frame!"],
   miss: ["That one slipped through. You've got the next one!"],
   attack: ["Incoming word attack!", "Brace the crystal!"],
 };
