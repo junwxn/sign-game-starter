@@ -213,6 +213,18 @@ export function SettingsOverlay({
           options={["easy", "normal", "hard"]}
           onChange={(v) => onChange({ difficulty: v })}
         />
+        <Segmented
+          label="Camera view size"
+          value={settings.cameraSize}
+          options={["small", "medium", "large"]}
+          onChange={(v) => onChange({ cameraSize: v })}
+        />
+        <Segmented
+          label="Sign example size"
+          value={settings.exampleSize}
+          options={["small", "medium", "large"]}
+          onChange={(v) => onChange({ exampleSize: v })}
+        />
         <Toggle
           label="Sound effects"
           value={settings.sound}

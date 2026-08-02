@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BattleMode, Difficulty, InputMode } from "./data";
 
+export type DisplaySize = "small" | "medium" | "large";
+
 export type Settings = {
   inputMode: InputMode;
   difficulty: Difficulty;
@@ -11,6 +13,8 @@ export type Settings = {
   highContrast: boolean;
   coachMessages: boolean;
   showConfidence: boolean;
+  cameraSize: DisplaySize;
+  exampleSize: DisplaySize;
   character: 0 | 1 | 2 | 3;
 };
 
@@ -64,6 +68,8 @@ export const defaultSettings: Settings = {
   highContrast: false,
   coachMessages: true,
   showConfidence: true,
+  cameraSize: "medium",
+  exampleSize: "medium",
   character: 0,
 };
 

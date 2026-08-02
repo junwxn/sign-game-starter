@@ -1,11 +1,11 @@
-import { FilesetResolver, HandLandmarker, type NormalizedLandmark } from '@mediapipe/tasks-vision';
-import type { TrackedHand, TrackingFrame } from './frame';
+import { FilesetResolver, HandLandmarker, type NormalizedLandmark } from "@mediapipe/tasks-vision";
+import type { TrackedHand, TrackingFrame } from "./frame";
 
-const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
+const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const HAND_MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-const TARGET_INFERENCE_INTERVAL_MS = 1000 / 24;
-const CANCELLED = 'Camera startup was cancelled.';
+  "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+const MAX_INFERENCE_WIDTH = 640;
+const CANCELLED = "Camera startup was cancelled.";
 
 const HAND_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
   [0, 1],
@@ -47,19 +47,27 @@ export class MediaPipeTracker {
   private lastVideoTime = -1;
   private lastVideoAdvanceTs = 0;
   private lastFrameTs = 0;
-  private lastInferenceTs = Number.NEGATIVE_INFINITY;
   private finishMetadataWait: ((error?: Error) => void) | null = null;
   private observedTracks: MediaStreamTrack[] = [];
   private readonly context: CanvasRenderingContext2D;
+  private readonly inferenceCanvas: HTMLCanvasElement;
+  private readonly inferenceContext: CanvasRenderingContext2D;
 
   constructor(
     private readonly video: HTMLVideoElement,
     private readonly canvas: HTMLCanvasElement,
     private readonly callbacks: MediaPipeTrackerCallbacks,
   ) {
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Webcam overlay canvas is unavailable.');
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Webcam overlay canvas is unavailable.");
     this.context = context;
+    this.inferenceCanvas = document.createElement("canvas");
+    const inferenceContext = this.inferenceCanvas.getContext("2d", {
+      alpha: false,
+      desynchronized: true,
+    });
+    if (!inferenceContext) throw new Error("Camera inference canvas is unavailable.");
+    this.inferenceContext = inferenceContext;
   }
 
   async start(): Promise<void> {
@@ -87,16 +95,16 @@ export class MediaPipeTracker {
 
   private async startInternal(generation: number): Promise<void> {
     if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error('Camera requires HTTPS or localhost.');
+      throw new Error("Camera requires HTTPS or localhost.");
     }
 
-    this.callbacks.onStatus?.('requesting camera permission…');
+    this.callbacks.onStatus?.("requesting camera permission…");
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
-        width: { ideal: 480 },
-        height: { ideal: 360 },
-        frameRate: { ideal: 24, max: 30 },
-        facingMode: 'user',
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 60 },
+        facingMode: "user",
       },
       audio: false,
     });
@@ -106,27 +114,27 @@ export class MediaPipeTracker {
     }
     this.stream = stream;
     this.observedTracks = stream.getVideoTracks();
-    this.observedTracks.forEach((track) => track.addEventListener('ended', this.onTrackEnded));
+    this.observedTracks.forEach((track) => track.addEventListener("ended", this.onTrackEnded));
     this.video.srcObject = stream;
     if (this.video.readyState < HTMLMediaElement.HAVE_METADATA) {
       await new Promise<void>((resolve, reject) => {
         const timeout = window.setTimeout(
-          () => done(new Error('Camera video did not become ready.')),
+          () => done(new Error("Camera video did not become ready.")),
           10_000,
         );
         const onLoadedMetadata = (): void => done();
-        const onError = (): void => done(new Error('Camera video failed to load.'));
+        const onError = (): void => done(new Error("Camera video failed to load."));
         const done = (error?: Error): void => {
           window.clearTimeout(timeout);
-          this.video.removeEventListener('loadedmetadata', onLoadedMetadata);
-          this.video.removeEventListener('error', onError);
+          this.video.removeEventListener("loadedmetadata", onLoadedMetadata);
+          this.video.removeEventListener("error", onError);
           if (this.finishMetadataWait === done) this.finishMetadataWait = null;
           if (error) reject(error);
           else resolve();
         };
         this.finishMetadataWait = done;
-        this.video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
-        this.video.addEventListener('error', onError, { once: true });
+        this.video.addEventListener("loadedmetadata", onLoadedMetadata, { once: true });
+        this.video.addEventListener("error", onError, { once: true });
         // Close the small race where metadata becomes available between the
         // readyState check above and listener registration.
         if (this.video.readyState >= HTMLMediaElement.HAVE_METADATA) done();
@@ -135,16 +143,23 @@ export class MediaPipeTracker {
     this.assertCurrent(generation);
     await this.video.play();
     this.assertCurrent(generation);
-    this.canvas.width = this.video.videoWidth;
-    this.canvas.height = this.video.videoHeight;
+    const inferenceWidth = Math.min(MAX_INFERENCE_WIDTH, this.video.videoWidth);
+    const inferenceHeight = Math.max(
+      1,
+      Math.round((inferenceWidth / this.video.videoWidth) * this.video.videoHeight),
+    );
+    this.inferenceCanvas.width = inferenceWidth;
+    this.inferenceCanvas.height = inferenceHeight;
+    this.canvas.width = inferenceWidth;
+    this.canvas.height = inferenceHeight;
 
-    this.callbacks.onStatus?.('loading hand tracking…');
+    this.callbacks.onStatus?.("loading hand tracking…");
     const files = await FilesetResolver.forVisionTasks(WASM_URL);
     this.assertCurrent(generation);
 
-    const handLandmarker = await createHandLandmarker(files, 'GPU').catch((error: unknown) => {
-      console.warn('Hand tracker GPU initialization failed; using CPU.', error);
-      return createHandLandmarker(files, 'CPU');
+    const handLandmarker = await createHandLandmarker(files, "GPU").catch((error: unknown) => {
+      console.warn("Hand tracker GPU initialization failed; using CPU.", error);
+      return createHandLandmarker(files, "CPU");
     });
     if (!this.isCurrent(generation)) {
       handLandmarker.close();
@@ -155,10 +170,9 @@ export class MediaPipeTracker {
     this.assertCurrent(generation);
     this.running = true;
     this.lastVideoTime = -1;
-    this.lastInferenceTs = Number.NEGATIVE_INFINITY;
     this.lastVideoAdvanceTs = performance.now();
     this.lastFrameTs = performance.now();
-    this.callbacks.onStatus?.('camera ready');
+    this.callbacks.onStatus?.("camera ready");
     this.rafId = requestAnimationFrame(this.loop);
   }
 
@@ -168,20 +182,25 @@ export class MediaPipeTracker {
     if (this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
     if (this.video.currentTime === this.lastVideoTime) {
       if (ts - this.lastVideoAdvanceTs > 3000) {
-        this.failRuntime(new Error('The camera stream stopped producing frames.'));
+        this.failRuntime(new Error("The camera stream stopped producing frames."));
       }
       return;
     }
     this.lastVideoTime = this.video.currentTime;
     this.lastVideoAdvanceTs = ts;
-    if (ts - this.lastInferenceTs < TARGET_INFERENCE_INTERVAL_MS) return;
-    this.lastInferenceTs = ts;
 
     try {
-      const result = this.handLandmarker.detectForVideo(this.video, ts);
+      this.inferenceContext.drawImage(
+        this.video,
+        0,
+        0,
+        this.inferenceCanvas.width,
+        this.inferenceCanvas.height,
+      );
+      const result = this.handLandmarker.detectForVideo(this.inferenceCanvas, ts);
       const hands: TrackedHand[] = result.landmarks.map((landmarks, index) => ({
         landmarks,
-        label: result.handedness[index]?.[0]?.categoryName ?? 'Right',
+        label: result.handedness[index]?.[0]?.categoryName ?? "Right",
       }));
 
       this.draw(hands);
@@ -194,7 +213,7 @@ export class MediaPipeTracker {
   };
 
   private readonly onTrackEnded = (): void => {
-    const error = new Error('The camera stream ended.');
+    const error = new Error("The camera stream ended.");
     if (!this.running) {
       this.generation += 1;
       this.finishMetadataWait?.(error);
@@ -236,13 +255,13 @@ export class MediaPipeTracker {
     this.handLandmarker = null;
     const stream = this.stream;
     const ownsVideo = stream !== null && this.video.srcObject === stream;
-    this.observedTracks.forEach((track) => track.removeEventListener('ended', this.onTrackEnded));
+    this.observedTracks.forEach((track) => track.removeEventListener("ended", this.onTrackEnded));
     this.observedTracks = [];
     stream?.getTracks().forEach((track) => {
       try {
         track.stop();
       } catch (error) {
-        console.warn('Failed to stop a camera track cleanly.', error);
+        console.warn("Failed to stop a camera track cleanly.", error);
       }
     });
     this.stream = null;
@@ -253,7 +272,6 @@ export class MediaPipeTracker {
     if (ownsVideo || this.video.srcObject === null) {
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
-    this.lastInferenceTs = Number.NEGATIVE_INFINITY;
   }
 }
 
@@ -261,11 +279,11 @@ type VisionFileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
 
 function createHandLandmarker(
   files: VisionFileset,
-  delegate: 'GPU' | 'CPU',
+  delegate: "GPU" | "CPU",
 ): Promise<HandLandmarker> {
   return HandLandmarker.createFromOptions(files, {
     baseOptions: { modelAssetPath: HAND_MODEL_URL, delegate },
-    runningMode: 'VIDEO',
+    runningMode: "VIDEO",
     numHands: 2,
   });
 }
@@ -277,7 +295,7 @@ function drawHand(
   height: number,
 ): void {
   context.save();
-  context.strokeStyle = '#7ee0a3';
+  context.strokeStyle = "#7ee0a3";
   context.lineWidth = Math.max(2, width / 320);
   context.beginPath();
   for (const [from, to] of HAND_CONNECTIONS) {
@@ -285,7 +303,7 @@ function drawHand(
     context.lineTo(landmarks[to].x * width, landmarks[to].y * height);
   }
   context.stroke();
-  context.fillStyle = '#e8ecff';
+  context.fillStyle = "#e8ecff";
   context.beginPath();
   const radius = Math.max(2.5, width / 180);
   for (const landmark of landmarks) {
@@ -301,9 +319,9 @@ function drawHand(
 function cameraError(cause: unknown): Error {
   if (cause instanceof Error && cause.message === CANCELLED) return cause;
   if (cause instanceof DOMException) {
-    if (cause.name === 'NotAllowedError') return new Error('Camera permission was blocked.');
-    if (cause.name === 'NotFoundError') return new Error('No camera was found.');
-    if (cause.name === 'NotReadableError') return new Error('The camera is already in use.');
+    if (cause.name === "NotAllowedError") return new Error("Camera permission was blocked.");
+    if (cause.name === "NotFoundError") return new Error("No camera was found.");
+    if (cause.name === "NotReadableError") return new Error("The camera is already in use.");
   }
   const message = cause instanceof Error ? cause.message : String(cause);
   return new Error(`Camera or hand tracking failed: ${message}`);
@@ -314,6 +332,6 @@ function safelyClose(task: { close: () => void } | null): void {
   try {
     task.close();
   } catch (error) {
-    console.warn('Failed to close a MediaPipe task cleanly.', error);
+    console.warn("Failed to close a MediaPipe task cleanly.", error);
   }
 }

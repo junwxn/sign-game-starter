@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Send } from "lucide-react";
+import { signExampleHeightClass } from "@/components/game/displaySizes";
 import { GameButton, Meter } from "@/components/game/kit";
+import type { DisplaySize } from "@/game/storage";
 import { cn } from "@/lib/utils";
 import { LiveRecognizer } from "@/recognizer/LiveRecognizer";
 import type { AttemptResult } from "@/recognizer/types";
@@ -184,7 +186,15 @@ export function LiveCamera({
   );
 }
 
-export function SignReferenceCard({ signId, className }: { signId?: string; className?: string }) {
+export function SignReferenceCard({
+  signId,
+  className,
+  size = "medium",
+}: {
+  signId?: string;
+  className?: string;
+  size?: DisplaySize;
+}) {
   const reference = signId ? SIGN_REFERENCES[signId.toLowerCase()] : undefined;
   if (!reference) return null;
 
@@ -202,7 +212,7 @@ export function SignReferenceCard({ signId, className }: { signId?: string; clas
       <img
         src={reference.mediaUrl}
         alt={`${signId?.toUpperCase()} sign example, ${reference.variant}`}
-        className="h-28 w-full rounded-lg bg-cream object-contain sm:h-36"
+        className={cn("w-full rounded-lg bg-cream object-contain", signExampleHeightClass[size])}
         loading="eager"
         referrerPolicy="no-referrer"
       />
