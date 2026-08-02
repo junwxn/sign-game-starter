@@ -3,7 +3,6 @@ import characterHaziq from "@/assets/character-haziq-v5-normalized.webp";
 import characterKai from "@/assets/character-kai-v6-centered.webp";
 import characterMei from "@/assets/character-mei-v5-normalized.webp";
 import characterPriya from "@/assets/character-priya-v5-normalized.webp";
-import poseEat from "@/assets/sign-eat-v6-normalized.webp";
 import poseFriend from "@/assets/sign-friend-v6-normalized.webp";
 import poseGood from "@/assets/sign-good-v6-normalized.webp";
 import poseHello from "@/assets/sign-hello-v6-normalized.webp";
@@ -13,6 +12,7 @@ import posePlease from "@/assets/sign-please-v6-normalized.webp";
 import poseSorry from "@/assets/sign-sorry-v6-normalized.webp";
 import poseThankYou from "@/assets/sign-thankyou-v6-normalized.webp";
 import poseWater from "@/assets/sign-water-v6-normalized.webp";
+import { SIGN_REFERENCES } from "@/signReferences";
 import poseYes from "@/assets/sign-yes-v6-normalized.webp";
 
 import poseYou from "@/assets/sign-you-v8-sgsl-halfbody.webp";
@@ -87,7 +87,7 @@ const poseMap: Record<string, string> = {
   hello: poseHello,
   water: poseWater,
   help: poseHelp,
-  eat: poseEat,
+  eat: SIGN_REFERENCES.eat.mediaUrl,
   thankyou: poseThankYou,
   please: posePlease,
   sorry: poseSorry,
@@ -148,7 +148,7 @@ export function SignPose({
   return (
     <span
       role="img"
-      aria-label={`Stylised ${label} mascot pose; use the verified reference for accuracy`}
+      aria-label={`${label} sign example; use the verified reference for accuracy`}
       className={cn("sign-pose block", className)}
       style={{
         backgroundImage: `url(${pose})`,

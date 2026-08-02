@@ -75,9 +75,9 @@ const LEGACY_SIGNS: Sign[] = [
     name: "Eat",
     category: "Needs",
     emoji: "🍚",
-    handShape: "A-hand held close to the mouth.",
-    movement: "Rotate the wrist inward near the mouth.",
-    mistake: "Using a pinched handshape instead of the documented A-hand.",
+    handShape: "Palm-in Flat-O hand held near the mouth.",
+    movement: "Move the Flat-O hand towards the mouth.",
+    mistake: "Using the A-hand/spoon variant instead of the trained alternate EATo variant.",
     referenceUrl: "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=Eat",
     referenceImage:
       "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/img1_eat_v2.1-3c31b2.jpg",
