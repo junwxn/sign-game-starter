@@ -12,14 +12,10 @@ import {
   SplashScene,
 } from "@/components/game/Menus";
 import { SettingsOverlay } from "@/components/game/Overlays";
-import {
-  MultiResults,
-  SingleResults,
-  type MultiResult,
-  type SingleResult,
-} from "@/components/game/Results";
+import { MultiResults, type MultiResult } from "@/components/game/Results";
+import { SentenceArcade } from "@/components/game/SentenceArcade";
+import { SentenceResults, type SentenceRunResult } from "@/components/game/SentenceResults";
 import { SignLibrary } from "@/components/game/SignLibrary";
-import { SinglePlayer } from "@/components/game/SinglePlayer";
 import type { Opponent } from "@/game/data";
 import { useSave } from "@/game/storage";
 
@@ -30,13 +26,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Sign Game is an arcade browser prototype: defend the sky village crystal by signing falling word creatures before they land.",
+          "Sign Game is an arcade browser prototype: defend the sky village crystal by signing complete Singapore Sign Language sequences.",
       },
-      { property: "og:title", content: "Sign Game — Sign fast. Save the words." },
+      { property: "og:title", content: "Sign Game — Build sentences with signs." },
       {
         property: "og:description",
-        content:
-          "Protect the communication crystal from mischievous word creatures in this Singapore Sign Language arcade prototype.",
+        content: "Complete sign sequences in order to protect the communication crystal.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -75,10 +70,11 @@ function SignGame() {
   const [scene, setScene] = useState<SceneName>("splash");
   const [showSettings, setShowSettings] = useState(false);
   const [opponent, setOpponent] = useState<Opponent | null>(null);
-  const [single, setSingle] = useState<SingleResult | null>(null);
+  const [sentenceRun, setSentenceRun] = useState<SentenceRunResult | null>(null);
   const [multi, setMulti] = useState<MultiResult | null>(null);
-  const [isBest, setIsBest] = useState(false);
   const [focusSigns, setFocusSigns] = useState<string[] | undefined>();
+  const [focusSentence, setFocusSentence] = useState<string | undefined>();
+  const [librarySection, setLibrarySection] = useState<"signs" | "sentences">("signs");
   const [runKey, setRunKey] = useState(0);
   const [cameraDestination, setCameraDestination] = useState<{
     next: SceneName;
@@ -96,20 +92,17 @@ function SignGame() {
     }
   };
 
-  const finishSingle = useCallback(
-    (r: SingleResult, attempts: { signId: string; correct: boolean; confidence: number }[]) => {
-      attempts.forEach((a) => recordAttempt(a.signId, a.correct, a.confidence));
-      const best = r.score > save.bestScore;
-      setIsBest(best);
+  const finishSentenceRun = useCallback(
+    (result: SentenceRunResult) => {
       update({
-        bestScore: Math.max(save.bestScore, r.score),
-        lastSingle: r,
-        level: save.level + (r.score > 800 ? 1 : 0),
+        bestScore: Math.max(save.bestScore, result.score),
+        lastSingle: result,
+        level: save.level + (result.sentencesCompleted >= 3 ? 1 : 0),
       });
-      setSingle(r);
+      setSentenceRun(result);
       setScene("results");
     },
-    [recordAttempt, save.bestScore, save.level, update],
+    [save.bestScore, save.level, update],
   );
 
   return (
@@ -128,6 +121,8 @@ function SignGame() {
           onMultiplayer={() => setScene("mpMenu")}
           onLibrary={() => {
             setFocusSigns(undefined);
+            setFocusSentence(undefined);
+            setLibrarySection("signs");
             setScene("library");
           }}
           onSettings={() => setShowSettings(true)}
@@ -155,28 +150,38 @@ function SignGame() {
       )}
 
       {scene === "play" && (
-        <SinglePlayer
+        <SentenceArcade
           key={runKey}
           inputMode={s.inputMode}
           difficulty={s.difficulty}
           settings={s}
-          onFinish={finishSingle}
+          unlockedSentences={save.sentencesUnlocked}
+          onSignAttempt={recordAttempt}
+          onSentenceComplete={recordSentence}
+          onFinish={finishSentenceRun}
           onMenu={() => setScene("menu")}
           onOpenSettings={() => setShowSettings(true)}
           onRestart={() => setRunKey((k) => k + 1)}
         />
       )}
 
-      {scene === "results" && single && (
-        <SingleResults
-          result={single}
-          isBest={isBest}
-          onPlayAgain={() => {
+      {scene === "results" && sentenceRun && (
+        <SentenceResults
+          result={sentenceRun}
+          onTryAgain={() => {
             setRunKey((k) => k + 1);
             setScene("play");
           }}
-          onPractise={() => {
-            setFocusSigns(single.weakSigns.length ? single.weakSigns : ["good"]);
+          onPractiseWeak={() => {
+            setFocusSigns(undefined);
+            setFocusSentence(sentenceRun.weakSentenceId ?? sentenceRun.bestSentenceId);
+            setLibrarySection("sentences");
+            setScene("library");
+          }}
+          onQuests={() => {
+            setFocusSigns(undefined);
+            setFocusSentence(undefined);
+            setLibrarySection("sentences");
             setScene("library");
           }}
           onMenu={() => setScene("menu")}
@@ -242,6 +247,8 @@ function SignGame() {
           onChangeMode={() => setScene("battleSelect")}
           onLibrary={() => {
             setFocusSigns(undefined);
+            setFocusSentence(undefined);
+            setLibrarySection("signs");
             setScene("library");
           }}
           onMenu={() => setScene("menu")}
@@ -265,6 +272,8 @@ function SignGame() {
           favourites={save.favourites}
           settings={s}
           focusSigns={focusSigns}
+          focusSentence={focusSentence}
+          initialSection={librarySection}
           sentenceProgress={save.sentenceProgress}
           sentenceFavourites={save.sentenceFavourites}
           sentencesUnlocked={save.sentencesUnlocked}

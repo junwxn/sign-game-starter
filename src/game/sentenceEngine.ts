@@ -9,6 +9,8 @@ export type SentenceEnemy = {
   x: number;
   y: number;
   speed: number;
+  startedAt: number;
+  wrongAttempts: number;
   status: "idle" | "hit" | "defeated";
   fromOpponent?: boolean;
 };
@@ -17,11 +19,15 @@ let seq = 0;
 const sid = () => `se${++seq}`;
 
 /** Sentence enemies carry 2–5 sign stages. */
-export function pickSentence(unlockedIds: string[]): SignSentence {
-  const pool = SENTENCES.filter(
-    (s) => s.isUnlocked || unlockedIds.includes(s.id),
+export function pickSentence(unlockedIds: string[], difficulty: Difficulty): SignSentence {
+  const available = SENTENCES.filter((s) => s.isUnlocked || unlockedIds.includes(s.id));
+  const maxSigns = difficulty === "easy" ? 2 : difficulty === "normal" ? 3 : 5;
+  const minSigns = difficulty === "hard" ? 3 : 2;
+  const levelPool = available.filter(
+    (sentence) =>
+      sentence.signSequence.length >= minSigns && sentence.signSequence.length <= maxSigns,
   );
-  const list = pool.length ? pool : SENTENCES;
+  const list = levelPool.length ? levelPool : available.length ? available : SENTENCES;
   return list[Math.floor(Math.random() * list.length)];
 }
 
@@ -30,7 +36,9 @@ export function makeSentenceEnemy(
   difficulty: Difficulty = "normal",
   opts: Partial<SentenceEnemy> = {},
 ): SentenceEnemy {
-  const sentence = opts.sentenceId ? sentenceById(opts.sentenceId) : pickSentence(unlockedIds);
+  const sentence = opts.sentenceId
+    ? sentenceById(opts.sentenceId)
+    : pickSentence(unlockedIds, difficulty);
   const sequence = sentence.signSequence.slice(0, 5);
   const diffMul = difficulty === "easy" ? 0.55 : difficulty === "hard" ? 1.15 : 0.8;
   return {
@@ -41,6 +49,8 @@ export function makeSentenceEnemy(
     x: 10 + Math.random() * 55,
     y: -14,
     speed: diffMul * (0.34 + Math.random() * 0.16),
+    startedAt: 0,
+    wrongAttempts: 0,
     status: "idle",
     ...opts,
   };

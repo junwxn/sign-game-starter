@@ -36,7 +36,7 @@ export function Logo({ className }: { className?: string }) {
         SIGN <span className="text-target">GAME</span>
       </h1>
       <p className="mt-2 font-sans text-sm font-bold text-cream/80 sm:text-base">
-        Learn the sign. Beat the clock. Build your team.
+        Learn the signs. Build sentences. Make them flow.
       </p>
     </div>
   );
@@ -141,7 +141,7 @@ export function MainMenu({
               <Users className="h-5 w-5" aria-hidden /> Multiplayer
             </GameButton>
             <GameButton tone="neutral" onClick={onLibrary}>
-              <Library className="h-5 w-5" aria-hidden /> Signs
+              <Library className="h-5 w-5" aria-hidden /> Learn
             </GameButton>
           </div>
           <p className="font-display text-xs font-extrabold uppercase tracking-widest text-cream/85 drop-shadow">
@@ -227,7 +227,7 @@ export function ModeSelect({
       <div className="grid h-full place-items-center p-4">
         <div className="panel anim-scene w-full max-w-md space-y-3 p-5">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-2xl font-black">Choose your mode</h2>
+            <h2 className="font-display text-2xl font-black">Sentence run setup</h2>
             <IconButton label="Back" onClick={onBack}>
               <X className="mx-auto h-5 w-5" aria-hidden />
             </IconButton>
@@ -235,20 +235,23 @@ export function ModeSelect({
           <PickCard
             active={inputMode === "camera"}
             title="Camera Mode"
-            desc="Perform the sign before the enemy reaches the protection zone."
+            desc="Complete every sign in the sentence, in order, before it reaches the crystal."
             icon={<Hand className="h-5 w-5" aria-hidden />}
             onClick={() => onChange({ inputMode: "camera" })}
           />
           <PickCard
             active={inputMode === "keyboard"}
             title="Keyboard Demo Mode"
-            desc="Type the target word to simulate sign recognition."
+            desc="Use guided controls to practise each sentence sequence without a camera."
             icon={<Keyboard className="h-5 w-5" aria-hidden />}
             onClick={() => onChange({ inputMode: "keyboard" })}
           />
           <DiffPicker value={difficulty} onChange={(d) => onChange({ difficulty: d })} />
+          <p className="text-center text-xs font-bold text-muted-foreground">
+            Easy: 2 signs · Normal: up to 3 · Hard: 3–5 sign sentences
+          </p>
           <GameButton tone="play" size="lg" className="w-full" onClick={onStart}>
-            START GAME
+            START SENTENCE RUN
           </GameButton>
         </div>
       </div>

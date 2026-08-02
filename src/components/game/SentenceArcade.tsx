@@ -22,9 +22,10 @@ import { SignToken } from "@/components/game/SentencePath";
 import { pick, type Difficulty, type InputMode } from "@/game/data";
 import { useTicker } from "@/game/engine";
 import { MAX_SENTENCE_ENEMIES, makeSentenceEnemy, type SentenceEnemy } from "@/game/sentenceEngine";
-import { SENTENCE_FEEDBACK, sentenceById, sentenceSignIds, tokenById } from "@/game/sentences";
+import { SENTENCE_FEEDBACK, sentenceById, sentenceStars, tokenById } from "@/game/sentences";
 import type { Settings } from "@/game/storage";
 import type { SentenceRunResult } from "@/components/game/SentenceResults";
+import type { SentenceSessionResult } from "@/components/game/SentenceQuestDetail";
 import { cn } from "@/lib/utils";
 
 const SESSION_SECONDS = 90;
@@ -126,6 +127,7 @@ export function SentenceArcade({
   settings,
   unlockedSentences,
   onSignAttempt,
+  onSentenceComplete,
   onFinish,
   onMenu,
   onOpenSettings,
@@ -136,6 +138,7 @@ export function SentenceArcade({
   settings: Settings;
   unlockedSentences: string[];
   onSignAttempt: (signId: string, correct: boolean, confidence: number) => void;
+  onSentenceComplete: (sentenceId: string, result: SentenceSessionResult) => void;
   onFinish: (r: SentenceRunResult) => void;
   onMenu: () => void;
   onOpenSettings: () => void;
@@ -158,6 +161,7 @@ export function SentenceArcade({
   >([]);
   const [paused, setPaused] = useState(false);
   const [hint, setHint] = useState(false);
+  const [cameraReady, setCameraReady] = useState(inputMode !== "camera");
   const [hintsUsed, setHintsUsed] = useState(0);
   const [crystalFlash, setCrystalFlash] = useState(false);
   const [sentencesDone, setSentencesDone] = useState(0);
@@ -169,13 +173,15 @@ export function SentenceArcade({
   const weakRef = useRef<string | undefined>(undefined);
   const floatId = useRef(0);
   const finished = useRef(false);
+  const hintedEnemies = useRef(new Set<string>());
 
-  const running = !paused && !hint;
-  const target = useMemo(
-    () => enemies.filter((e) => e.status === "idle").sort((a, b) => b.y - a.y)[0],
-    [enemies],
-  );
+  const running = !paused && !hint && cameraReady;
+  const target = useMemo(() => {
+    const active = enemies.filter((enemy) => enemy.status !== "defeated");
+    return active.find((enemy) => enemy.stage > 0) ?? active.sort((a, b) => b.y - a.y)[0];
+  }, [enemies]);
   const currentToken = target ? tokenById(target.sequence[target.stage]) : null;
+  const currentSentence = target ? sentenceById(target.sentenceId) : null;
 
   const addFloat = useCallback(
     (text: string, tone: "success" | "danger" | "target", x = 50, y = 45) => {
@@ -265,7 +271,7 @@ export function SentenceArcade({
   }, [lives, time, end]);
 
   const resolve = (kind: "correct" | "wrong" | "nohands", measuredConfidence?: number) => {
-    if (!target || !running) return;
+    if (!target || !running || target.status !== "idle") return;
     if (kind === "nohands") {
       setStatus("nohands");
       setCoach("Keep both hands visible!");
@@ -281,7 +287,18 @@ export function SentenceArcade({
       setCoach(pick(SENTENCE_FEEDBACK.order));
       addFloat("CHECK THE ORDER!", "danger", target.x + 8, target.y + 12);
       onSignAttempt(currentToken?.signId ?? target.sequence[target.stage], false, 38);
-      setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "hit" } : e)));
+      setEnemies((l) =>
+        l.map((e) =>
+          e.id === target.id
+            ? {
+                ...e,
+                status: "hit",
+                startedAt: e.startedAt || Date.now(),
+                wrongAttempts: e.wrongAttempts + 1,
+              }
+            : e,
+        ),
+      );
       setTimeout(
         () => setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "idle" } : e))),
         420,
@@ -300,10 +317,10 @@ export function SentenceArcade({
     onSignAttempt(currentToken?.signId ?? target.sequence[target.stage], true, resultConfidence);
     const nextStage = target.stage + 1;
     const complete = nextStage >= target.sequence.length;
-    const gained = complete ? 180 + target.sequence.length * 60 + combo * 20 : 60 + combo * 10;
-    setScore((s) => s + gained);
-    addFloat(`+${gained}`, "success", target.x + 8, target.y + 10);
+    const gained = complete ? 240 + target.sequence.length * 90 + combo * 30 : 0;
     if (complete) {
+      setScore((s) => s + gained);
+      addFloat(`+${gained}`, "success", target.x + 8, target.y + 10);
       const nextCombo = combo + 1;
       setCombo(nextCombo);
       setBestCombo((b) => Math.max(b, nextCombo));
@@ -312,13 +329,41 @@ export function SentenceArcade({
       flashHero(nextCombo >= 3 ? "combo" : "correct");
       setCoach(pick(SENTENCE_FEEDBACK.perfect));
       addFloat(pick(SENTENCE_FEEDBACK.perfect), "target", 44, 30);
-      sentenceSignIds(sentenceById(target.sentenceId)).forEach((id) => onSignAttempt(id, true, 80));
+      const timeMs = Math.max(1, Date.now() - (target.startedAt || Date.now()));
+      const orderPct =
+        (target.sequence.length / (target.sequence.length + target.wrongAttempts)) * 100;
+      const sentenceHints = hintedEnemies.current.has(target.id) ? 1 : 0;
+      onSentenceComplete(target.sentenceId, {
+        completed: true,
+        score: gained,
+        timeMs,
+        orderPct,
+        hintsUsed: sentenceHints,
+        stars: sentenceStars({
+          completed: true,
+          hintsUsed: sentenceHints,
+          orderPct,
+          timeMs,
+          signCount: target.sequence.length,
+        }),
+      });
+      hintedEnemies.current.delete(target.id);
       setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "defeated" } : e)));
       setTimeout(() => setEnemies((l) => l.filter((e) => e.id !== target.id)), 420);
     } else {
       flashHero("correct");
       setCoach("Great! Now connect it to the next sign.");
-      setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, stage: nextStage } : e)));
+      addFloat(
+        `${nextStage}/${target.sequence.length} SIGNS`,
+        "success",
+        target.x + 8,
+        target.y + 10,
+      );
+      setEnemies((l) =>
+        l.map((e) =>
+          e.id === target.id ? { ...e, stage: nextStage, startedAt: e.startedAt || Date.now() } : e,
+        ),
+      );
     }
   };
 
@@ -351,6 +396,7 @@ export function SentenceArcade({
                 onClick={() => {
                   setHint(true);
                   setHintsUsed((h) => h + 1);
+                  if (target) hintedEnemies.current.add(target.id);
                 }}
               >
                 <Lightbulb className="mx-auto h-4 w-4" aria-hidden />
@@ -408,17 +454,58 @@ export function SentenceArcade({
                   targets={currentToken?.signId ? [currentToken.signId] : []}
                   active={running && !!currentToken?.signId}
                   showConfidence={settings.showConfidence}
+                  onReady={() => {
+                    setCameraReady(true);
+                    setCoach("Camera ready — complete the highlighted sentence in order!");
+                  }}
                   onResult={(result) =>
                     resolve(
                       result.accepted ? "correct" : "wrong",
                       Math.round(result.confidence * 100),
                     )
                   }
-                  onError={() => resolve("nohands")}
+                  onError={() => {
+                    setCameraReady(false);
+                    setStatus("nohands");
+                    setCoach("Camera stopped — reopen the game or check camera permission.");
+                  }}
                 />
               </div>
             )}
             <div className="min-w-0 space-y-2">
+              {currentSentence && (
+                <p className="panel line-clamp-2 px-3 py-2 font-display text-sm font-black sm:text-base">
+                  {currentSentence.englishMeaning}
+                </p>
+              )}
+              {target && (
+                <ol
+                  className="panel flex max-w-full items-center gap-1 overflow-x-auto !rounded-xl p-1.5"
+                  aria-label="Current sentence sign order"
+                >
+                  {target.sequence.map((tokenId, index) => (
+                    <li key={`${tokenId}-${index}`} className="flex shrink-0 items-center gap-1">
+                      <span
+                        className={cn(
+                          "rounded-full border-2 border-ink px-2 py-1 font-display text-[0.6rem] font-black uppercase",
+                          index < target.stage
+                            ? "bg-success text-ink"
+                            : index === target.stage
+                              ? "bg-target text-ink"
+                              : "bg-cream/70 text-ink/60",
+                        )}
+                      >
+                        {tokenById(tokenId).name}
+                      </span>
+                      {index < target.sequence.length - 1 && (
+                        <span className="font-display font-black text-ink/70" aria-hidden>
+                          →
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
               {inputMode === "camera" && (
                 <SignReferenceCard
                   signId={currentToken?.signId}
@@ -427,7 +514,7 @@ export function SentenceArcade({
               )}
               <div className="flex items-center gap-2">
                 <span className="font-display text-[0.6rem] font-black uppercase tracking-widest text-cream drop-shadow">
-                  Current stage
+                  Next sign {target ? `${target.stage + 1}/${target.sequence.length}` : ""}
                 </span>
                 <span className="word-label bg-target text-sm text-[oklch(0.2_0.05_50)]">
                   {currentToken?.name ?? "—"}
@@ -438,7 +525,7 @@ export function SentenceArcade({
               ) : (
                 <div className="flex flex-wrap gap-2">
                   <GameButton tone="success" onClick={() => resolve("correct")}>
-                    Perform Stage Sign
+                    Perform Next Sign
                   </GameButton>
                   <GameButton tone="danger" onClick={() => resolve("wrong")}>
                     Wrong Sign
