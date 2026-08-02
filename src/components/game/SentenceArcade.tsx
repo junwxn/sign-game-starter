@@ -8,10 +8,10 @@ import {
   Hero,
   HudChip,
   IconButton,
+  Meter,
   Scene,
   type HeroState,
 } from "@/components/game/kit";
-import { cameraViewSizeClass, signExampleSizeClass } from "@/components/game/displaySizes";
 import {
   DevPanel,
   LiveCamera,
@@ -35,6 +35,16 @@ import type { SentenceSessionResult } from "@/components/game/SentenceQuestDetai
 import { cn } from "@/lib/utils";
 
 const SESSION_SECONDS = 90;
+const railCameraSizeClass = {
+  small: "w-3/4",
+  medium: "w-[88%]",
+  large: "w-full",
+};
+const railDemoSizeClass = {
+  small: "w-3/5",
+  medium: "w-4/5",
+  large: "w-full",
+};
 
 /** Speech-cloud sentence creature — its shield segments are the sign stages. */
 export function SentenceEnemySprite({
@@ -385,8 +395,8 @@ export function SentenceArcade({
 
   return (
     <Scene dim={0.12}>
-      <div className="flex h-full flex-col">
-        <div className="flex items-start justify-between gap-2 p-2 sm:p-3">
+      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_auto_minmax(32rem,1fr)] overflow-y-auto lg:grid-cols-[clamp(19rem,34vw,28rem)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
+        <header className="relative z-30 col-start-1 row-start-2 flex flex-wrap items-start justify-between gap-2 p-2 lg:col-start-2 lg:row-start-1 sm:p-3">
           <div className="flex flex-col items-start gap-1">
             <HudChip label="Score" value={score} tone="target" />
             <HudChip label="Sentences" value={sentencesDone} />
@@ -412,9 +422,9 @@ export function SentenceArcade({
               </IconButton>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div className="relative min-h-0 flex-1 overflow-hidden">
+        <main className="relative col-start-1 row-start-3 min-h-0 overflow-hidden lg:col-start-2 lg:row-start-2">
           {enemies.map((e) => (
             <SentenceEnemySprite
               key={e.id}
@@ -438,12 +448,6 @@ export function SentenceArcade({
               style={{ left: `${f.x}%`, top: `${f.y}%` }}
             />
           ))}
-          {settings.coachMessages && (
-            <CoachBubble
-              message={coach}
-              className="absolute bottom-16 left-1 z-30 origin-bottom-left scale-90 sm:bottom-2 sm:left-2 sm:scale-100"
-            />
-          )}
           <Hero
             state={heroState}
             className="absolute bottom-0 right-2 z-20 h-32 w-24 sm:h-44 sm:w-32"
@@ -451,12 +455,18 @@ export function SentenceArcade({
           <div className="absolute inset-x-0 bottom-0">
             <CrystalZone health={(lives / 3) * 100} flash={crystalFlash} />
           </div>
-        </div>
+        </main>
 
-        <div className="flex shrink-0 items-end gap-3 p-2 sm:p-3">
-          <div className="flex w-full max-w-4xl flex-wrap items-end gap-3 pb-1">
-            {inputMode === "camera" && (
-              <div className={cn("shrink-0", cameraViewSizeClass[settings.cameraSize])}>
+        <aside className="relative z-30 col-start-1 row-start-1 flex min-h-0 flex-col gap-2 border-b-4 border-ink bg-ink/85 p-2 backdrop-blur-md lg:row-span-2 lg:overflow-y-auto lg:border-b-0 lg:border-r-4 sm:p-3">
+          <section aria-labelledby="camera-panel-title" className="shrink-0">
+            <p
+              id="camera-panel-title"
+              className="mb-1 font-display text-[0.62rem] font-black uppercase tracking-[0.2em] text-cream"
+            >
+              Camera
+            </p>
+            {inputMode === "camera" ? (
+              <div className={cn("mx-auto", railCameraSizeClass[settings.cameraSize])}>
                 <LiveCamera
                   targets={currentToken?.signId ? [currentToken.signId] : []}
                   active={running && !!currentToken?.signId}
@@ -478,71 +488,104 @@ export function SentenceArcade({
                   }}
                 />
               </div>
-            )}
-            <div className="min-w-0 flex-1 basis-48 space-y-2">
-              {currentSentence && (
-                <p className="panel line-clamp-2 px-3 py-2 font-display text-sm font-black sm:text-base">
-                  {currentSentence.englishMeaning}
+            ) : (
+              <div className="panel grid aspect-[4/3] place-items-center !rounded-2xl bg-ink/80 p-4 text-center text-cream">
+                <p className="font-display text-sm font-black uppercase tracking-wider">
+                  Keyboard demo mode
                 </p>
-              )}
-              {target && (
-                <ol
-                  className="panel flex max-w-full flex-wrap items-center justify-center gap-1 overflow-hidden !rounded-xl p-1.5"
-                  aria-label="Current sentence sign order"
-                >
-                  {target.sequence.map((tokenId, index) => (
-                    <li key={`${tokenId}-${index}`} className="flex shrink-0 items-center gap-1">
-                      <span
-                        className={cn(
-                          "rounded-full border-2 border-ink px-2 py-1 font-display text-[0.6rem] font-black uppercase",
-                          index < target.stage
-                            ? "bg-success text-ink"
-                            : index === target.stage
-                              ? "bg-target text-ink"
-                              : "bg-cream/70 text-ink/60",
-                        )}
-                      >
-                        {tokenById(tokenId).name}
-                      </span>
-                      {index < target.sequence.length - 1 && (
-                        <span className="font-display font-black text-ink/70" aria-hidden>
-                          →
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              )}
-              {inputMode === "camera" && (
-                <SignReferenceCard
-                  signId={currentToken?.signId}
-                  size={settings.exampleSize}
-                  className={signExampleSizeClass[settings.exampleSize]}
-                />
-              )}
-              <div className="flex items-center gap-2">
-                <span className="font-display text-[0.6rem] font-black uppercase tracking-widest text-cream drop-shadow">
-                  Next sign {target ? `${target.stage + 1}/${target.sequence.length}` : ""}
-                </span>
-                <span className="word-label bg-target text-sm text-[oklch(0.2_0.05_50)]">
-                  {currentToken?.name ?? "—"}
-                </span>
               </div>
-              {inputMode === "camera" ? (
-                <span className="hud-chip block text-center text-xs">Show sign to camera</span>
+            )}
+          </section>
+
+          <section aria-labelledby="demo-panel-title" className="shrink-0">
+            <p
+              id="demo-panel-title"
+              className="mb-1 font-display text-[0.62rem] font-black uppercase tracking-[0.2em] text-cream"
+            >
+              Sign demo
+            </p>
+            <div className={cn("mx-auto", railDemoSizeClass[settings.exampleSize])}>
+              {currentToken?.signId ? (
+                <SignReferenceCard
+                  signId={currentToken.signId}
+                  size={settings.exampleSize}
+                  className="w-full max-w-none"
+                />
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  <GameButton tone="success" onClick={() => resolve("correct")}>
-                    Perform Next Sign
-                  </GameButton>
-                  <GameButton tone="danger" onClick={() => resolve("wrong")}>
-                    Wrong Sign
-                  </GameButton>
+                <div className="panel grid min-h-24 place-items-center !rounded-xl p-3 text-center">
+                  <p className="font-display text-sm font-black">
+                    The next sign demo will appear here.
+                  </p>
                 </div>
               )}
             </div>
-          </div>
-          <div className="ml-auto">
+          </section>
+
+          <section
+            aria-labelledby="controls-panel-title"
+            className="panel min-h-0 flex-1 space-y-2 overflow-y-auto !rounded-2xl p-3"
+          >
+            <p
+              id="controls-panel-title"
+              className="font-display text-[0.62rem] font-black uppercase tracking-[0.2em] text-muted-foreground"
+            >
+              Sentence controls
+            </p>
+            {currentSentence && (
+              <p className="font-display text-base font-black sm:text-lg">
+                {currentSentence.englishMeaning}
+              </p>
+            )}
+            {target && (
+              <ol
+                className="panel flex max-w-full flex-wrap items-center justify-center gap-1 overflow-hidden !rounded-xl p-1.5"
+                aria-label="Current sentence sign order"
+              >
+                {target.sequence.map((tokenId, index) => (
+                  <li key={`${tokenId}-${index}`} className="flex shrink-0 items-center gap-1">
+                    <span
+                      className={cn(
+                        "rounded-full border-2 border-ink px-2 py-1 font-display text-[0.6rem] font-black uppercase",
+                        index < target.stage
+                          ? "bg-success text-ink"
+                          : index === target.stage
+                            ? "bg-target text-ink"
+                            : "bg-cream/70 text-ink/60",
+                      )}
+                    >
+                      {tokenById(tokenId).name}
+                    </span>
+                    {index < target.sequence.length - 1 && (
+                      <span className="font-display font-black text-ink/70" aria-hidden>
+                        →
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-display text-[0.6rem] font-black uppercase tracking-widest text-muted-foreground">
+                Next sign {target ? `${target.stage + 1}/${target.sequence.length}` : ""}
+              </span>
+              <span className="word-label bg-target text-sm text-[oklch(0.2_0.05_50)]">
+                {currentToken?.name ?? "—"}
+              </span>
+            </div>
+            {inputMode === "camera" ? (
+              <span className="hud-chip block text-center text-xs">Show sign to camera</span>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <GameButton tone="success" onClick={() => resolve("correct")}>
+                  Perform Next Sign
+                </GameButton>
+                <GameButton tone="danger" onClick={() => resolve("wrong")}>
+                  Wrong Sign
+                </GameButton>
+              </div>
+            )}
+            <Meter value={flow} label="Sentence flow" tone="success" />
+            {settings.coachMessages && <CoachBubble message={coach} className="!items-center" />}
             <DevPanel
               actions={[
                 { label: "Correct Stage", onClick: () => resolve("correct") },
@@ -551,8 +594,8 @@ export function SentenceArcade({
                 { label: "Miss Sentence", onClick: () => handleMiss(target) },
               ]}
             />
-          </div>
-        </div>
+          </section>
+        </aside>
       </div>
 
       {paused && (
