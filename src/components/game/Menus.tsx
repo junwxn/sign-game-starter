@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
+  Camera,
+  CheckCircle2,
   Gamepad2,
   Hand,
   Keyboard,
   Library,
+  RotateCcw,
   Settings as SettingsIcon,
   Swords,
   Trophy,
@@ -13,6 +16,7 @@ import {
 } from "lucide-react";
 import { Avatar, CoachBubble, GameButton, Hero, IconButton, Scene } from "@/components/game/kit";
 import { CharacterArt, CHARACTERS } from "@/components/game/CharacterArt";
+import { LiveCamera } from "@/components/game/InputPanel";
 import {
   makeOpponent,
   type BattleMode,
@@ -245,6 +249,91 @@ export function ModeSelect({
           <DiffPicker value={difficulty} onChange={(d) => onChange({ difficulty: d })} />
           <GameButton tone="play" size="lg" className="w-full" onClick={onStart}>
             START GAME
+          </GameButton>
+        </div>
+      </div>
+    </Scene>
+  );
+}
+
+export function CameraCheckScene({
+  onContinue,
+  onBack,
+}: {
+  onContinue: () => void;
+  onBack: () => void;
+}) {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
+  return (
+    <Scene dim={0.35}>
+      <div className="grid h-full place-items-center overflow-y-auto p-4">
+        <div className="panel anim-scene w-full max-w-lg space-y-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-2xl font-black">Camera check</h2>
+              <p className="text-sm font-semibold text-muted-foreground">
+                We verify the webcam, hand tracker, and sign model before starting.
+              </p>
+            </div>
+            <IconButton label="Back" onClick={onBack}>
+              <X className="mx-auto h-5 w-5" aria-hidden />
+            </IconButton>
+          </div>
+
+          <div className="mx-auto w-full max-w-sm">
+            <LiveCamera
+              key={retryKey}
+              targets={[]}
+              active={false}
+              showConfidence={false}
+              onResult={() => undefined}
+              onReady={() => {
+                setReady(true);
+                setError(null);
+              }}
+              onError={(cameraError) => {
+                setReady(false);
+                setError(cameraError.message);
+              }}
+            />
+          </div>
+
+          {ready ? (
+            <p className="flex items-center justify-center gap-2 font-display text-sm font-black uppercase text-success">
+              <CheckCircle2 className="h-5 w-5" aria-hidden /> Camera and model ready
+            </p>
+          ) : error ? (
+            <div className="space-y-2 text-center">
+              <p className="font-display text-sm font-black text-danger" role="alert">
+                {error}
+              </p>
+              <GameButton
+                tone="neutral"
+                onClick={() => {
+                  setError(null);
+                  setRetryKey((key) => key + 1);
+                }}
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden /> Retry camera
+              </GameButton>
+            </div>
+          ) : (
+            <p className="flex items-center justify-center gap-2 font-display text-sm font-black uppercase text-target-deep">
+              <Camera className="h-5 w-5" aria-hidden /> Allow camera access to continue
+            </p>
+          )}
+
+          <GameButton
+            tone="play"
+            size="lg"
+            className="w-full"
+            disabled={!ready}
+            onClick={onContinue}
+          >
+            CONTINUE TO GAME
           </GameButton>
         </div>
       </div>

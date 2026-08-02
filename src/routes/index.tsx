@@ -4,6 +4,7 @@ import { Battle } from "@/components/game/Battle";
 import { LocalVersus } from "@/components/game/LocalVersus";
 import {
   BattleModeSelect,
+  CameraCheckScene,
   MainMenu,
   Matchmaking,
   ModeSelect,
@@ -48,6 +49,7 @@ type SceneName =
   | "splash"
   | "menu"
   | "modeSelect"
+  | "cameraCheck"
   | "play"
   | "results"
   | "mpMenu"
@@ -78,8 +80,21 @@ function SignGame() {
   const [isBest, setIsBest] = useState(false);
   const [focusSigns, setFocusSigns] = useState<string[] | undefined>();
   const [runKey, setRunKey] = useState(0);
+  const [cameraDestination, setCameraDestination] = useState<{
+    next: SceneName;
+    back: SceneName;
+  }>({ next: "play", back: "modeSelect" });
 
   const s = save.settings;
+
+  const enterGame = (next: SceneName, back: SceneName) => {
+    if (s.inputMode === "camera") {
+      setCameraDestination({ next, back });
+      setScene("cameraCheck");
+    } else {
+      setScene(next);
+    }
+  };
 
   const finishSingle = useCallback(
     (r: SingleResult, attempts: { signId: string; correct: boolean; confidence: number }[]) => {
@@ -127,8 +142,15 @@ function SignGame() {
           onBack={() => setScene("menu")}
           onStart={() => {
             setRunKey((k) => k + 1);
-            setScene("play");
+            enterGame("play", "modeSelect");
           }}
+        />
+      )}
+
+      {scene === "cameraCheck" && (
+        <CameraCheckScene
+          onContinue={() => setScene(cameraDestination.next)}
+          onBack={() => setScene(cameraDestination.back)}
         />
       )}
 
@@ -164,7 +186,7 @@ function SignGame() {
       {scene === "mpMenu" && (
         <MultiplayerMenu
           onQuick={() => setScene("battleSelect")}
-          onLocal={() => setScene("local")}
+          onLocal={() => enterGame("local", "mpMenu")}
           onBack={() => setScene("menu")}
         />
       )}
@@ -175,7 +197,7 @@ function SignGame() {
           difficulty={s.difficulty}
           onChange={setSettings}
           onBack={() => setScene("mpMenu")}
-          onStart={() => setScene("matchmaking")}
+          onStart={() => enterGame("matchmaking", "battleSelect")}
         />
       )}
 

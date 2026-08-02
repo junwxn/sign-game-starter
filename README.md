@@ -35,4 +35,6 @@ The trained sign model is in `public/models`, with tracking and verification in
 `src/cv`. The recognizer contract and live webcam adapter are in
 `src/recognizer`. Camera mode uses the live webcam in gameplay and practice.
 Its word and sentence banks are restricted to the model's 11 supported labels.
-Run on localhost or HTTPS and grant camera permission when prompted.
+The pre-game camera check must pass before camera gameplay starts, and the
+active target includes an attributed NTU SgSL Sign Bank example. Run on
+localhost or HTTPS and grant camera permission when prompted.

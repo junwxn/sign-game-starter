@@ -11,7 +11,12 @@ import {
   Scene,
   type HeroState,
 } from "@/components/game/kit";
-import { DevPanel, LiveCamera, type RecogStatus } from "@/components/game/InputPanel";
+import {
+  DevPanel,
+  LiveCamera,
+  SignReferenceCard,
+  type RecogStatus,
+} from "@/components/game/InputPanel";
 import { HintOverlay, PauseOverlay } from "@/components/game/Overlays";
 import { SignToken } from "@/components/game/SentencePath";
 import { pick, type Difficulty, type InputMode } from "@/game/data";
@@ -414,6 +419,9 @@ export function SentenceArcade({
               </div>
             )}
             <div className="min-w-0 space-y-2">
+              {inputMode === "camera" && (
+                <SignReferenceCard signId={currentToken?.signId} className="w-28" />
+              )}
               <div className="flex items-center gap-2">
                 <span className="font-display text-[0.6rem] font-black uppercase tracking-widest text-cream drop-shadow">
                   Current stage

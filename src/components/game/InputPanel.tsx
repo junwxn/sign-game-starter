@@ -4,6 +4,7 @@ import { GameButton, Meter } from "@/components/game/kit";
 import { cn } from "@/lib/utils";
 import { LiveRecognizer } from "@/recognizer/LiveRecognizer";
 import type { AttemptResult } from "@/recognizer/types";
+import { SIGN_REFERENCES } from "@/signReferences";
 
 export type RecogStatus =
   "idle" | "framing" | "hands" | "checking" | "accepted" | "almost" | "rejected" | "nohands";
@@ -70,24 +71,26 @@ export function LiveCamera({
   active = true,
   onResult,
   onError,
+  onReady,
 }: {
   targets: string[];
   showConfidence: boolean;
   active?: boolean;
   onResult: (result: AttemptResult) => void;
   onError?: (error: Error) => void;
+  onReady?: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<HTMLParagraphElement>(null);
   const recognizerRef = useRef<LiveRecognizer | null>(null);
-  const callbacksRef = useRef({ onResult, onError });
+  const callbacksRef = useRef({ onResult, onError, onReady });
   const [status, setStatus] = useState<RecogStatus>("framing");
   const [confidence, setConfidence] = useState(0);
   const targetKey = targets.join("\0");
 
-  callbacksRef.current = { onResult, onError };
+  callbacksRef.current = { onResult, onError, onReady };
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -123,7 +126,10 @@ export function LiveCamera({
     recognizer.on("inputPreview", handlePreview);
     recognizer.on("error", handleError);
     recognizer.setActiveTargets([]);
-    void recognizer.start().catch(handleError);
+    void recognizer
+      .start()
+      .then(() => callbacksRef.current.onReady?.())
+      .catch(handleError);
 
     return () => {
       recognizer.off("attemptStart", handleStart);
@@ -171,6 +177,35 @@ export function LiveCamera({
         <RecognitionStatus status={status} confidence={confidence} show={showConfidence} />
       </div>
     </div>
+  );
+}
+
+export function SignReferenceCard({ signId, className }: { signId?: string; className?: string }) {
+  const reference = signId ? SIGN_REFERENCES[signId.toLowerCase()] : undefined;
+  if (!reference) return null;
+
+  return (
+    <a
+      href={reference.sourceUrl}
+      target="_blank"
+      rel="noreferrer"
+      className={cn(
+        "panel block overflow-hidden !rounded-xl p-1 text-center transition-transform hover:scale-[1.02]",
+        className,
+      )}
+      aria-label={`Open ${signId} in the NTU SgSL Sign Bank`}
+    >
+      <img
+        src={reference.mediaUrl}
+        alt={`${signId?.toUpperCase()} sign example, ${reference.variant}`}
+        className="h-20 w-full rounded-lg bg-cream object-contain"
+        loading="eager"
+        referrerPolicy="no-referrer"
+      />
+      <span className="mt-1 block font-display text-[0.55rem] font-black uppercase tracking-wide text-ink">
+        NTU example · {reference.variant}
+      </span>
+    </a>
   );
 }
 

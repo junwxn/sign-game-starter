@@ -1,5 +1,5 @@
-import { CV } from '../config';
-import { featurize, predict, protoDist, type Frame, type Model } from './signfeat.js';
+import { CV } from "../config";
+import { featurize, predict, protoDist, type Frame, type Model } from "./signfeat.js";
 
 export interface StreamingVerifierOptions {
   bufferMs: number;
@@ -145,7 +145,7 @@ export class StreamingVerifier {
 
     if (!this.armed) {
       const hitProbability = this.lastHit
-        ? probabilities[this.modelIndex.get(this.lastHit) ?? -1] ?? 0
+        ? (probabilities[this.modelIndex.get(this.lastHit) ?? -1] ?? 0)
         : 0;
       if (hitProbability < this.options.rearmBelow) {
         this.armed = true;
@@ -155,11 +155,13 @@ export class StreamingVerifier {
       return this.update(display, false, null);
     }
 
+    // The latest model's trained `none` class rejects rest, fidgeting, and
+    // out-of-vocabulary motion. Prototype distance is retained for feedback,
+    // but is no longer an acceptance gate because it reduced genuine recall.
     const eligible = candidates.find(
       (candidate) =>
         candidate.confidence >= this.options.confidenceThreshold &&
-        (this.options.minMargin <= 0 || candidate.margin >= this.options.minMargin) &&
-        (candidate.fit === null || candidate.fit <= this.options.prototypeRejectOver),
+        (this.options.minMargin <= 0 || candidate.margin >= this.options.minMargin),
     );
     if (!eligible) {
       this.drain(elapsed);
@@ -217,7 +219,7 @@ export class StreamingVerifier {
   private update(
     candidate: Candidate | null,
     attemptStarted: boolean,
-    hit: VerificationUpdate['hit'],
+    hit: VerificationUpdate["hit"],
   ): VerificationUpdate {
     return {
       label: candidate?.gameLabel ?? null,

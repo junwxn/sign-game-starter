@@ -16,6 +16,7 @@ import {
   DevPanel,
   KeyboardInput,
   LiveCamera,
+  SignReferenceCard,
   type RecogStatus,
 } from "@/components/game/InputPanel";
 import { HintOverlay, PauseOverlay } from "@/components/game/Overlays";
@@ -380,6 +381,7 @@ export function SinglePlayer({
                   />
                 </div>
                 <div className="space-y-2">
+                  <SignReferenceCard signId={target?.signId} className="w-32" />
                   <span className="word-label block bg-target text-center text-lg text-[oklch(0.2_0.05_50)]">
                     {target?.word ?? "—"}
                   </span>

@@ -18,6 +18,7 @@ import {
   DevPanel,
   KeyboardInput,
   LiveCamera,
+  SignReferenceCard,
   type RecogStatus,
 } from "@/components/game/InputPanel";
 import { PauseOverlay } from "@/components/game/Overlays";
@@ -601,6 +602,7 @@ export function Battle({
                   />
                 </div>
                 <div className="space-y-2">
+                  <SignReferenceCard signId={target?.signId} className="w-28" />
                   <span className="word-label block bg-target text-center text-lg text-[oklch(0.2_0.05_50)]">
                     {target?.word ?? "—"}
                   </span>

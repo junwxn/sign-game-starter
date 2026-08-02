@@ -16,7 +16,9 @@ export async function loadSignModel(path = CV.modelPath): Promise<Model> {
   if (!Array.isArray(model.labels) || model.labels.length === 0 || !Array.isArray(model.layers)) {
     throw new Error("Sign model is malformed.");
   }
-  const modelLabels = model.labels.map((label) => label.toLowerCase());
+  const modelLabels = model.labels
+    .map((label) => label.toLowerCase())
+    .filter((label) => label !== "none");
   if (
     modelLabels.length !== VOCAB.length ||
     VOCAB.some((label, index) => modelLabels[index] !== label)

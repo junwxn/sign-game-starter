@@ -6,7 +6,21 @@
 // may be absent per frame; frames exist only while at least one hand is tracked.
 
 export const T = 32;
-export const FEAT_DIM = 135; // dom: 63 shape + 2 traj + 2 face-rel · non-dom: 63 shape + 2 face-rel + 2 inter-hand + 1 presence
+// v5 (hands-only, symmetric). Layout per frame:
+//   0..62    right hand 21x(x,y,z), wrist-origin, / that frame's hand scale
+//   63,64    right wrist trajectory, (wrist - wrist@frame0) / medScale
+//   65..127  left hand, same as right
+//   128,129  left wrist trajectory
+//   130,131  inter-hand (left wrist - right wrist) / medScale
+//   132,133  presence (right, left)
+// No dominant-hand choice and no face anchor. The slots are FIXED: right is
+// always the first block. Handedness is covered by mirrored training clips
+// (train_signs.py mirror_clip), not by canonicalising at featurize time —
+// deciding it per call made the whole vector mirror when a two-handed sign's
+// hand-count tie tipped, and the live rolling window re-rolled that tie every
+// frame. Nothing here branches on the data, so the same clip always maps to
+// the same vector.
+export const FEAT_DIM = 134;
 
 // packed per-frame vector layout used between resample and featurize
 const R_OFF = 0, RP = 63, L_OFF = 64, LP = 127, FC = 128; // fc: 128,129 center · 130 size
@@ -59,60 +73,53 @@ export function resample(frames, t = T) {
   return { seq: out, nR, nL };
 }
 
+// Ruler: wrist (0) -> middle MCP (9), in 3D. It MUST stay 3D: an x/y-only
+// ruler foreshortens to ~0 when the hand points at the camera, and everything
+// is divided by it, so features explode (measured: window-to-window jumps of
+// ~5000 vs ~1.5 normally). z stays in the ruler and is divided by it, which is
+// what keeps z on the same footing as x/y.
 function handScale(v, off) {
-  // wrist (0) -> middle MCP (9); indices *3
   return Math.hypot(v[off + 27] - v[off], v[off + 28] - v[off + 1], v[off + 29] - v[off + 2]) || 1;
 }
 
 // clip: {frames: [{ts, r?, l?, fc?}]} -> flattened T×FEAT_DIM vector.
-// Dominant hand = the one present in more raw frames (tie -> right);
-// left-dominant clips are mirrored so signs look right-dominant.
+// Fixed slots, no branching: see the FEAT_DIM note above.
 export function featurize(clip) {
   const { seq, nR, nL } = resample(clip.frames);
-  const domIsR = nR >= nL;
-  const dOff = domIsR ? R_OFF : L_OFF;
-  const nOff = domIsR ? L_OFF : R_OFF;
-  const nP = domIsR ? LP : RP;
-  const nonEver = (domIsR ? nL : nR) > 0;
+  const ever = [nR > 0, nL > 0];
 
-  if (!domIsR) {
-    for (const v of seq) {
-      if (nR > 0) for (let i = R_OFF; i < R_OFF + 63; i += 3) v[i] = 1 - v[i];
-      for (let i = L_OFF; i < L_OFF + 63; i += 3) v[i] = 1 - v[i];
-      if (v[FC + 2] > 0) v[FC] = 1 - v[FC];
-    }
+  // One symmetric ruler for both hands' trajectories: the median hand scale
+  // over every frame of every hand that is present. (Per-hand rulers would
+  // make the inter-hand vector meaningless.)
+  const all = [];
+  for (const v of seq) {
+    if (ever[0]) all.push(handScale(v, R_OFF));
+    if (ever[1]) all.push(handScale(v, L_OFF));
   }
+  all.sort((a, b) => a - b);
+  const medScale = all[Math.floor(all.length / 2)] || 1;
 
-  const scales = seq.map(v => handScale(v, dOff)).sort((a, b) => a - b);
-  const medScale = scales[Math.floor(scales.length / 2)] || 1;
-  const fsizes = seq.map(v => v[FC + 2]).sort((a, b) => a - b);
-  const fMed = fsizes[Math.floor(fsizes.length / 2)] || 1; // 1 when clip has no face
-  const w0x = seq[0][dOff], w0y = seq[0][dOff + 1];
+  const w0 = [[seq[0][R_OFF], seq[0][R_OFF + 1]], [seq[0][L_OFF], seq[0][L_OFF + 1]]];
 
   const feat = [];
   for (const v of seq) {
-    const s = handScale(v, dOff);
-    const wx = v[dOff], wy = v[dOff + 1], wz = v[dOff + 2];
-    for (let i = 0; i < 63; i += 3) {
-      feat.push((v[dOff + i] - wx) / s, (v[dOff + i + 1] - wy) / s, (v[dOff + i + 2] - wz) / s);
-    }
-    feat.push((wx - w0x) / medScale, (wy - w0y) / medScale);
-    if (v[FC + 2] > 0) feat.push((wx - v[FC]) / fMed, (wy - v[FC + 1]) / fMed);
-    else feat.push(0, 0);
-
-    if (nonEver) {
-      const s2 = handScale(v, nOff);
-      const nx = v[nOff], ny = v[nOff + 1], nz = v[nOff + 2];
+    for (let h = 0; h < 2; h++) {          // 0 = right, 1 = left — always this order
+      const off = h ? L_OFF : R_OFF;
+      if (!ever[h]) { for (let i = 0; i < 65; i++) feat.push(0); continue; }
+      const s = handScale(v, off);
+      const wx = v[off], wy = v[off + 1], wz = v[off + 2];
       for (let i = 0; i < 63; i += 3) {
-        feat.push((v[nOff + i] - nx) / s2, (v[nOff + i + 1] - ny) / s2, (v[nOff + i + 2] - nz) / s2);
+        feat.push((v[off + i] - wx) / s, (v[off + i + 1] - wy) / s, (v[off + i + 2] - wz) / s);
       }
-      if (v[FC + 2] > 0) feat.push((nx - v[FC]) / fMed, (ny - v[FC + 1]) / fMed);
-      else feat.push(0, 0);
-      feat.push((nx - wx) / medScale, (ny - wy) / medScale);
-      feat.push(v[nP]);
-    } else {
-      for (let i = 0; i < 68; i++) feat.push(0); // 63 shape + 2 face-rel + 2 inter + 1 presence
+      feat.push((wx - w0[h][0]) / medScale, (wy - w0[h][1]) / medScale);
     }
+    // inter-hand: left wrist relative to right wrist (zero unless both exist)
+    if (ever[0] && ever[1]) {
+      feat.push((v[L_OFF] - v[R_OFF]) / medScale, (v[L_OFF + 1] - v[R_OFF + 1]) / medScale);
+    } else {
+      feat.push(0, 0);
+    }
+    feat.push(v[RP], v[LP]);
   }
   return feat;
 }

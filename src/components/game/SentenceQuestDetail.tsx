@@ -13,7 +13,12 @@ import {
   Stars,
   type HeroState,
 } from "@/components/game/kit";
-import { DevPanel, LiveCamera, type RecogStatus } from "@/components/game/InputPanel";
+import {
+  DevPanel,
+  LiveCamera,
+  SignReferenceCard,
+  type RecogStatus,
+} from "@/components/game/InputPanel";
 import { SentencePath, SequenceProgressLine, SignToken } from "@/components/game/SentencePath";
 import {
   SENTENCE_COACH,
@@ -611,13 +616,16 @@ function FullSentencePractice({
 
       <div className="grid gap-3 md:grid-cols-[16rem_minmax(0,1fr)]">
         {settings.inputMode === "camera" ? (
-          <LiveCamera
-            targets={currentSignId ? [currentSignId] : []}
-            active={running && !!currentSignId}
-            showConfidence={settings.showConfidence}
-            onResult={(result) => performSign(Math.round(result.confidence * 100))}
-            onError={() => setStatus("nohands")}
-          />
+          <div className="space-y-2">
+            <LiveCamera
+              targets={currentSignId ? [currentSignId] : []}
+              active={running && !!currentSignId}
+              showConfidence={settings.showConfidence}
+              onResult={(result) => performSign(Math.round(result.confidence * 100))}
+              onError={() => setStatus("nohands")}
+            />
+            <SignReferenceCard signId={currentSignId} />
+          </div>
         ) : (
           <div className="panel grid min-h-48 place-items-center p-4 text-center">
             <p className="font-display text-sm font-black uppercase text-muted-foreground">
