@@ -403,7 +403,7 @@ export function SentenceArcade({
         <div className="flex shrink-0 items-end gap-3 p-2 sm:p-3">
           <div className="flex w-full max-w-2xl items-end gap-3">
             {inputMode === "camera" && (
-              <div className="w-40 shrink-0 sm:w-52">
+              <div className="w-[55vw] max-w-56 shrink-0 sm:w-80 sm:max-w-none">
                 <LiveCamera
                   targets={currentToken?.signId ? [currentToken.signId] : []}
                   active={running && !!currentToken?.signId}
@@ -420,7 +420,10 @@ export function SentenceArcade({
             )}
             <div className="min-w-0 space-y-2">
               {inputMode === "camera" && (
-                <SignReferenceCard signId={currentToken?.signId} className="w-28" />
+                <SignReferenceCard
+                  signId={currentToken?.signId}
+                  className="w-[36vw] max-w-40 sm:w-48 sm:max-w-none"
+                />
               )}
               <div className="flex items-center gap-2">
                 <span className="font-display text-[0.6rem] font-black uppercase tracking-widest text-cream drop-shadow">

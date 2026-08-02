@@ -64,7 +64,7 @@ export function RecognitionStatus({
   );
 }
 
-/** Stylised mock camera — no webcam access at any point. */
+/** Live camera preview and sign-recognition overlay. */
 export function LiveCamera({
   targets,
   showConfidence,
@@ -85,6 +85,7 @@ export function LiveCamera({
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<HTMLParagraphElement>(null);
   const recognizerRef = useRef<LiveRecognizer | null>(null);
+  const lastPreviewUpdateRef = useRef(0);
   const callbacksRef = useRef({ onResult, onError, onReady });
   const [status, setStatus] = useState<RecogStatus>("framing");
   const [confidence, setConfidence] = useState(0);
@@ -110,6 +111,9 @@ export function LiveCamera({
       callbacksRef.current.onResult(result);
     };
     const handlePreview = (message: string) => {
+      const now = performance.now();
+      if (now - lastPreviewUpdateRef.current < 100) return;
+      lastPreviewUpdateRef.current = now;
       const match = message.match(/\b(\d{1,3})%/);
       if (match) setConfidence(Number(match[1]));
       if (message.includes("watching")) setStatus("hands");
@@ -198,7 +202,7 @@ export function SignReferenceCard({ signId, className }: { signId?: string; clas
       <img
         src={reference.mediaUrl}
         alt={`${signId?.toUpperCase()} sign example, ${reference.variant}`}
-        className="h-20 w-full rounded-lg bg-cream object-contain"
+        className="h-28 w-full rounded-lg bg-cream object-contain sm:h-36"
         loading="eager"
         referrerPolicy="no-referrer"
       />

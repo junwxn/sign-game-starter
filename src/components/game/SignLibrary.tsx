@@ -353,7 +353,7 @@ function SignDetail({
             </GameButton>
           ) : (
             <div className="panel space-y-3 p-4">
-              <div className="grid gap-3 sm:grid-cols-[16rem_minmax(0,1fr)]">
+              <div className="grid gap-3 sm:grid-cols-[22rem_minmax(0,1fr)]">
                 {settings.inputMode === "camera" ? (
                   <LiveCamera
                     targets={[signId]}

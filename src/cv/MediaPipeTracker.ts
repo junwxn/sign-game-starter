@@ -1,25 +1,34 @@
-import {
-  FaceDetector,
-  FilesetResolver,
-  HandLandmarker,
-  type NormalizedLandmark,
-} from '@mediapipe/tasks-vision';
-import type { FaceAnchor, TrackedHand, TrackingFrame } from './frame';
+import { FilesetResolver, HandLandmarker, type NormalizedLandmark } from '@mediapipe/tasks-vision';
+import type { TrackedHand, TrackingFrame } from './frame';
 
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const HAND_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-const FACE_MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
-const FACE_INTERVAL_MS = 150;
+const TARGET_INFERENCE_INTERVAL_MS = 1000 / 24;
 const CANCELLED = 'Camera startup was cancelled.';
 
 const HAND_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
-  [0, 1], [1, 2], [2, 3], [3, 4],
-  [0, 5], [5, 6], [6, 7], [7, 8],
-  [5, 9], [9, 10], [10, 11], [11, 12],
-  [9, 13], [13, 14], [14, 15], [15, 16],
-  [13, 17], [17, 18], [18, 19], [19, 20], [0, 17],
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+  [0, 5],
+  [5, 6],
+  [6, 7],
+  [7, 8],
+  [5, 9],
+  [9, 10],
+  [10, 11],
+  [11, 12],
+  [9, 13],
+  [13, 14],
+  [14, 15],
+  [15, 16],
+  [13, 17],
+  [17, 18],
+  [18, 19],
+  [19, 20],
+  [0, 17],
 ];
 
 export interface MediaPipeTrackerCallbacks {
@@ -30,7 +39,6 @@ export interface MediaPipeTrackerCallbacks {
 
 export class MediaPipeTracker {
   private handLandmarker: HandLandmarker | null = null;
-  private faceDetector: FaceDetector | null = null;
   private stream: MediaStream | null = null;
   private rafId = 0;
   private generation = 0;
@@ -39,8 +47,7 @@ export class MediaPipeTracker {
   private lastVideoTime = -1;
   private lastVideoAdvanceTs = 0;
   private lastFrameTs = 0;
-  private lastFaceTs = Number.NEGATIVE_INFINITY;
-  private lastFace: FaceAnchor | null = null;
+  private lastInferenceTs = Number.NEGATIVE_INFINITY;
   private finishMetadataWait: ((error?: Error) => void) | null = null;
   private observedTracks: MediaStreamTrack[] = [];
   private readonly context: CanvasRenderingContext2D;
@@ -85,7 +92,12 @@ export class MediaPipeTracker {
 
     this.callbacks.onStatus?.('requesting camera permission…');
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+      video: {
+        width: { ideal: 480 },
+        height: { ideal: 360 },
+        frameRate: { ideal: 24, max: 30 },
+        facingMode: 'user',
+      },
       audio: false,
     });
     if (!this.isCurrent(generation)) {
@@ -126,7 +138,7 @@ export class MediaPipeTracker {
     this.canvas.width = this.video.videoWidth;
     this.canvas.height = this.video.videoHeight;
 
-    this.callbacks.onStatus?.('loading hand and face tracking…');
+    this.callbacks.onStatus?.('loading hand tracking…');
     const files = await FilesetResolver.forVisionTasks(WASM_URL);
     this.assertCurrent(generation);
 
@@ -140,25 +152,10 @@ export class MediaPipeTracker {
     }
     this.handLandmarker = handLandmarker;
 
-    try {
-      const faceDetector = await createFaceDetector(files, 'GPU').catch((error: unknown) => {
-        console.warn('Face tracker GPU initialization failed; using CPU.', error);
-        return createFaceDetector(files, 'CPU');
-      });
-      if (!this.isCurrent(generation)) {
-        faceDetector.close();
-        throw new Error(CANCELLED);
-      }
-      this.faceDetector = faceDetector;
-    } catch (error) {
-      if (error instanceof Error && error.message === CANCELLED) throw error;
-      console.warn('Face tracking is unavailable; location-based signs may be weaker.', error);
-      this.faceDetector = null;
-    }
-
     this.assertCurrent(generation);
     this.running = true;
     this.lastVideoTime = -1;
+    this.lastInferenceTs = Number.NEGATIVE_INFINITY;
     this.lastVideoAdvanceTs = performance.now();
     this.lastFrameTs = performance.now();
     this.callbacks.onStatus?.('camera ready');
@@ -177,6 +174,8 @@ export class MediaPipeTracker {
     }
     this.lastVideoTime = this.video.currentTime;
     this.lastVideoAdvanceTs = ts;
+    if (ts - this.lastInferenceTs < TARGET_INFERENCE_INTERVAL_MS) return;
+    this.lastInferenceTs = ts;
 
     try {
       const result = this.handLandmarker.detectForVideo(this.video, ts);
@@ -185,27 +184,10 @@ export class MediaPipeTracker {
         label: result.handedness[index]?.[0]?.categoryName ?? 'Right',
       }));
 
-      if (this.faceDetector && ts - this.lastFaceTs >= FACE_INTERVAL_MS) {
-        this.lastFaceTs = ts;
-        try {
-          this.lastFace = largestFace(
-            this.faceDetector.detectForVideo(this.video, ts).detections,
-            this.video.videoWidth,
-            this.video.videoHeight,
-          );
-        } catch (error) {
-          console.warn('Face tracking stopped; hand recognition will continue.', error);
-          safelyClose(this.faceDetector);
-          this.faceDetector = null;
-          this.lastFace = null;
-          this.callbacks.onStatus?.('face tracking unavailable · hands still active');
-        }
-      }
-
-      this.draw(hands, this.lastFace);
+      this.draw(hands);
       const dt = ts - this.lastFrameTs;
       this.lastFrameTs = ts;
-      this.callbacks.onFrame({ ts, dt, hands, face: this.lastFace });
+      this.callbacks.onFrame({ ts, dt, hands, face: null });
     } catch (cause) {
       this.failRuntime(cause instanceof Error ? cause : new Error(String(cause)));
     }
@@ -230,18 +212,10 @@ export class MediaPipeTracker {
     }
   }
 
-  private draw(hands: TrackedHand[], face: FaceAnchor | null): void {
+  private draw(hands: TrackedHand[]): void {
     const { width, height } = this.canvas;
     this.context.clearRect(0, 0, width, height);
     for (const hand of hands) drawHand(this.context, hand.landmarks, width, height);
-    if (!face) return;
-    const size = face.size * height;
-    this.context.save();
-    this.context.strokeStyle = 'rgba(126, 224, 163, 0.65)';
-    this.context.lineWidth = 2;
-    this.context.setLineDash([6, 6]);
-    this.context.strokeRect(face.cx * width - size / 2, face.cy * height - size / 2, size, size);
-    this.context.restore();
   }
 
   private isCurrent(generation: number): boolean {
@@ -259,9 +233,7 @@ export class MediaPipeTracker {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.rafId = 0;
     safelyClose(this.handLandmarker);
-    safelyClose(this.faceDetector);
     this.handLandmarker = null;
-    this.faceDetector = null;
     const stream = this.stream;
     const ownsVideo = stream !== null && this.video.srcObject === stream;
     this.observedTracks.forEach((track) => track.removeEventListener('ended', this.onTrackEnded));
@@ -281,45 +253,21 @@ export class MediaPipeTracker {
     if (ownsVideo || this.video.srcObject === null) {
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
-    this.lastFace = null;
-    this.lastFaceTs = Number.NEGATIVE_INFINITY;
+    this.lastInferenceTs = Number.NEGATIVE_INFINITY;
   }
 }
 
 type VisionFileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
 
-function createHandLandmarker(files: VisionFileset, delegate: 'GPU' | 'CPU'): Promise<HandLandmarker> {
+function createHandLandmarker(
+  files: VisionFileset,
+  delegate: 'GPU' | 'CPU',
+): Promise<HandLandmarker> {
   return HandLandmarker.createFromOptions(files, {
     baseOptions: { modelAssetPath: HAND_MODEL_URL, delegate },
     runningMode: 'VIDEO',
     numHands: 2,
   });
-}
-
-function createFaceDetector(files: VisionFileset, delegate: 'GPU' | 'CPU'): Promise<FaceDetector> {
-  return FaceDetector.createFromOptions(files, {
-    baseOptions: { modelAssetPath: FACE_MODEL_URL, delegate },
-    runningMode: 'VIDEO',
-  });
-}
-
-function largestFace(
-  detections: ReturnType<FaceDetector['detectForVideo']>['detections'],
-  width: number,
-  height: number,
-): FaceAnchor | null {
-  let largest: (typeof detections)[number]['boundingBox'] | null = null;
-  for (const detection of detections) {
-    const box = detection.boundingBox;
-    if (!box) continue;
-    if (!largest || box.width * box.height > largest.width * largest.height) largest = box;
-  }
-  if (!largest) return null;
-  return {
-    cx: (largest.originX + largest.width / 2) / width,
-    cy: (largest.originY + largest.height / 2) / height,
-    size: largest.height / height,
-  };
 }
 
 function drawHand(
@@ -330,19 +278,23 @@ function drawHand(
 ): void {
   context.save();
   context.strokeStyle = '#7ee0a3';
-  context.lineWidth = 2;
+  context.lineWidth = Math.max(2, width / 320);
+  context.beginPath();
   for (const [from, to] of HAND_CONNECTIONS) {
-    context.beginPath();
     context.moveTo(landmarks[from].x * width, landmarks[from].y * height);
     context.lineTo(landmarks[to].x * width, landmarks[to].y * height);
-    context.stroke();
   }
+  context.stroke();
   context.fillStyle = '#e8ecff';
+  context.beginPath();
+  const radius = Math.max(2.5, width / 180);
   for (const landmark of landmarks) {
-    context.beginPath();
-    context.arc(landmark.x * width, landmark.y * height, 3, 0, Math.PI * 2);
-    context.fill();
+    const x = landmark.x * width;
+    const y = landmark.y * height;
+    context.moveTo(x + radius, y);
+    context.arc(x, y, radius, 0, Math.PI * 2);
   }
+  context.fill();
   context.restore();
 }
 

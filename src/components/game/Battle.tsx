@@ -583,10 +583,10 @@ export function Battle({
 
         {/* input row */}
         <div className="flex shrink-0 items-end gap-3 p-2 sm:p-3">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-2xl">
             {inputMode === "camera" ? (
               <div className="flex items-end gap-3">
-                <div className="w-40 sm:w-52">
+                <div className="w-[55vw] max-w-56 shrink-0 sm:w-80 sm:max-w-none">
                   <LiveCamera
                     targets={target ? [target.signId] : []}
                     active={running && !!target}
@@ -602,7 +602,10 @@ export function Battle({
                   />
                 </div>
                 <div className="space-y-2">
-                  <SignReferenceCard signId={target?.signId} className="w-28" />
+                  <SignReferenceCard
+                    signId={target?.signId}
+                    className="w-[36vw] max-w-40 sm:w-48 sm:max-w-none"
+                  />
                   <span className="word-label block bg-target text-center text-lg text-[oklch(0.2_0.05_50)]">
                     {target?.word ?? "—"}
                   </span>

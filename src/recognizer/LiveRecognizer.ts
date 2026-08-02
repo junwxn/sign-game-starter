@@ -49,7 +49,7 @@ export class LiveRecognizer extends TinyEmitter<RecognizerEvents> implements Sig
       this.verifier = new StreamingVerifier(model);
       this.applyTargets();
       this.running = true;
-      this.setState("camera ready · show both hands and face");
+      this.setState("camera ready · show your hands");
       this.emitPreview("CV ready");
     } catch (cause) {
       tracker.stop();
@@ -109,11 +109,11 @@ export class LiveRecognizer extends TinyEmitter<RecognizerEvents> implements Sig
         latencyMs: update.hit.latencyMs,
       });
     }
-    this.renderUpdate(update, frame.hands.length, frame.face !== null);
+    this.renderUpdate(update, frame.hands.length);
   }
 
-  private renderUpdate(update: VerificationUpdate, handCount: number, hasFace: boolean): void {
-    const tracking = `${handCount} hand${handCount === 1 ? "" : "s"} · face ${hasFace ? "✓" : "–"}`;
+  private renderUpdate(update: VerificationUpdate, handCount: number): void {
+    const tracking = `${handCount} hand${handCount === 1 ? "" : "s"}`;
     if (!update.label) {
       this.setState(handCount > 0 ? `${tracking} · watching falling words` : "show your hands");
       this.emitPreview(handCount > 0 ? "watching…" : "");

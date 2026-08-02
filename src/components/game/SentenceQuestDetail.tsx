@@ -614,7 +614,7 @@ function FullSentencePractice({
         <SequenceProgressLine value={done.length} max={seq.length} />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[16rem_minmax(0,1fr)]">
+      <div className="grid gap-3 md:grid-cols-[22rem_minmax(0,1fr)]">
         {settings.inputMode === "camera" ? (
           <div className="space-y-2">
             <LiveCamera
