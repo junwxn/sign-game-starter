@@ -11,9 +11,9 @@ const WORD_PAGE = "https://blogs.ntu.edu.sg/sgslsignbank/word/?frm-word=";
  * Temporary teaching references from the official SgSL Sign Bank.
  *
  * These are remote links, not bundled assets. Variant IDs were not stored in
- * the landmark clips: default variants are used except alternate variant EATo,
- * whose Flat-O hand-to-mouth motion matches the collected data. Replace mediaUrl values
- * with team-owned files when those recordings are ready.
+ * the landmark clips: default variants are used, including EATa with its A-hand
+ * wrist rotation near the mouth. Replace mediaUrl values with team-owned files
+ * when those recordings are ready.
  */
 export const SIGN_REFERENCES: Record<string, SignReference> = {
   coffee: {
@@ -24,10 +24,10 @@ export const SIGN_REFERENCES: Record<string, SignReference> = {
     sourceUrl: `${WORD_PAGE}Coffee`,
   },
   eat: {
-    variant: "EATo · variant 2",
+    variant: "EATa · variant 1",
     mediaType: "image",
     mediaUrl:
-      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/gif_eat_signer3_v1-2b6918.gif",
+      "https://blogs.ntu.edu.sg/sgslsignbank/files/formidable/3/gif_eat_signer4_v2-22c59d.gif",
     sourceUrl: `${WORD_PAGE}Eat`,
   },
   finish: {

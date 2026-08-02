@@ -48,10 +48,16 @@ export function SentenceEnemySprite({
 }) {
   const remaining = enemy.sequence.length - enemy.stage;
   const meaning = sentenceById(enemy.sentenceId).englishMeaning;
+  const isLongSentence = enemy.sequence.length >= 4;
   return (
     <div
       className={cn(
-        "absolute flex w-[16rem] flex-col items-center sm:w-[20rem]",
+        "absolute flex flex-col items-center",
+        enemy.sequence.length >= 5
+          ? "w-[min(96vw,28rem)]"
+          : enemy.sequence.length === 4
+            ? "w-[min(94vw,23rem)]"
+            : "w-[16rem] sm:w-[20rem]",
         enemy.status === "defeated" && "anim-pop",
         enemy.status === "hit" && "anim-shake",
       )}
@@ -61,12 +67,16 @@ export function SentenceEnemySprite({
         <p className="truncate text-center font-display text-[0.7rem] font-black uppercase tracking-widest">
           {meaning}
         </p>
-        <ol className="mt-1 flex items-stretch justify-center gap-0.5 overflow-x-auto">
+        <ol className="mt-1 flex items-stretch justify-center gap-0.5 overflow-hidden">
           {enemy.sequence.map((t, i) => (
             <li key={i} className="flex items-center gap-0.5">
               <SignToken
                 tokenId={t}
                 size="sm"
+                className={cn(
+                  isLongSentence && "!min-w-[3.25rem] !px-1 sm:!min-w-[4rem]",
+                  enemy.sequence.length >= 5 && "!min-w-[3rem] sm:!min-w-[4rem]",
+                )}
                 state={
                   i < enemy.stage
                     ? "done"
@@ -78,7 +88,13 @@ export function SentenceEnemySprite({
                 }
               />
               {i < enemy.sequence.length - 1 && (
-                <span aria-hidden className="font-display text-sm font-black text-ink/70">
+                <span
+                  aria-hidden
+                  className={cn(
+                    "font-display font-black text-ink/70",
+                    isLongSentence ? "text-xs" : "text-sm",
+                  )}
+                >
                   →
                 </span>
               )}
@@ -405,8 +421,9 @@ export function SentenceArcade({
               enemy={e}
               active={target?.id === e.id}
               style={{
-                left: `${e.x}%`,
+                left: e.sequence.length >= 4 ? "50%" : `${e.x}%`,
                 top: `${e.y}%`,
+                translate: e.sequence.length >= 4 ? "-50% 0" : undefined,
                 transition: "top 110ms linear",
                 zIndex: target?.id === e.id ? 20 : 10,
                 opacity: target?.id === e.id ? 1 : 0.85,
