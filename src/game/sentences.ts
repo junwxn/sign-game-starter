@@ -559,17 +559,16 @@ export const SENTENCE_COACH = {
   flow: "The signs should flow together.",
 };
 
-/** Star rule: 1 = completed with help, 2 = no hints, 3 = perfect order + speed. */
+/** Star rule: 1 = completed, 2 = strong order, 3 = perfect order + speed. */
 export function sentenceStars(opts: {
   completed: boolean;
-  hintsUsed: number;
   orderPct: number;
   timeMs: number;
   signCount: number;
 }) {
   if (!opts.completed) return 0;
   const fast = opts.timeMs <= opts.signCount * 3500;
-  if (opts.orderPct >= 100 && opts.hintsUsed === 0 && fast) return 3;
-  if (opts.hintsUsed === 0 && opts.orderPct >= 80) return 2;
+  if (opts.orderPct >= 100 && fast) return 3;
+  if (opts.orderPct >= 80) return 2;
   return 1;
 }

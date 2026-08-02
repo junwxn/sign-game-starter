@@ -1,5 +1,4 @@
 import { GameButton, Overlay, SignMark, Stars } from "@/components/game/kit";
-import { CharacterArt, SignPose } from "@/components/game/CharacterArt";
 import { signById } from "@/game/data";
 import type { Settings } from "@/game/storage";
 import { cn } from "@/lib/utils";
@@ -32,80 +31,6 @@ export function PauseOverlay({
         </GameButton>
         <GameButton tone="neutral" className="w-full" onClick={onMenu}>
           Main Menu
-        </GameButton>
-      </div>
-    </Overlay>
-  );
-}
-
-export function HintOverlay({ signId, onClose }: { signId: string; onClose: () => void }) {
-  const sign = signById(signId);
-  return (
-    <Overlay labelledBy="hint-title">
-      <div className="panel w-full max-w-md space-y-3 p-5">
-        <div className="flex items-center gap-3">
-          <SignMark signId={sign.id} label={sign.name} size={48} />
-          <h2 id="hint-title" className="font-display text-3xl font-black">
-            {sign.name}
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="sign-demo-card">
-            <SignPose signId={sign.id} label={sign.name} className="h-40 w-full" />
-            <p>Mascot preview · follow reference</p>
-          </div>
-          {sign.referenceImage ? (
-            <a
-              href={sign.referenceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="sign-demo-card sign-demo-card--verified"
-            >
-              <img
-                src={sign.referenceImage}
-                alt={`${sign.name} reference from the ${sign.referenceLabel}`}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-              <p>Verified reference</p>
-            </a>
-          ) : (
-            <a
-              href={sign.referenceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="sign-demo-card sign-demo-card--lesson"
-            >
-              Open Deaf-led SgSL lesson
-            </a>
-          )}
-        </div>
-        <ul className="space-y-2 text-sm font-semibold">
-          <li>
-            <strong className="font-display uppercase text-target-deep">Hand shape · </strong>
-            {sign.handShape}
-          </li>
-          <li>
-            <strong className="font-display uppercase text-magic">Movement · </strong>
-            {sign.movement}
-          </li>
-          <li>
-            <strong className="font-display uppercase text-danger">Common mistake · </strong>
-            {sign.mistake}
-          </li>
-        </ul>
-        <div className="flex items-end gap-2">
-          <CharacterArt
-            index={0}
-            className="character-art--coach h-16 w-14 shrink-0"
-            label="Mei, sign coach"
-          />
-          <p className="panel flex-1 px-3 py-2 text-sm font-bold">
-            Take your time — shape first, then movement.
-          </p>
-        </div>
-        <GameButton tone="play" size="lg" className="w-full" onClick={onClose}>
-          Try Again
         </GameButton>
       </div>
     </Overlay>

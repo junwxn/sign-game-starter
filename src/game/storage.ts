@@ -28,7 +28,6 @@ export type SentenceProgress = {
   bestTimeMs: number | null;
   orderPct: number;
   stars: number;
-  hintsUsed: number;
   lastPractisedAt: number | null;
 };
 
@@ -39,7 +38,6 @@ export const emptySentenceProgress: SentenceProgress = {
   bestTimeMs: null,
   orderPct: 0,
   stars: 0,
-  hintsUsed: 0,
   lastPractisedAt: null,
 };
 
@@ -204,7 +202,6 @@ export function useSave() {
         score: number;
         timeMs: number;
         orderPct: number;
-        hintsUsed: number;
         stars: number;
       },
     ) => {
@@ -222,7 +219,6 @@ export function useSave() {
               : p.bestTimeMs,
           orderPct: Math.max(p.orderPct, Math.round(r.orderPct)),
           stars: Math.max(p.stars, r.stars),
-          hintsUsed: p.hintsUsed + r.hintsUsed,
           lastPractisedAt: Date.now(),
         };
         return {

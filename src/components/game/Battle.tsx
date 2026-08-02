@@ -350,7 +350,7 @@ export function Battle({
     }, 380);
   }
 
-  /* meter full → auto attack ready hint */
+  /* meter full → auto attack ready indicator */
   useEffect(() => {
     if (hard && meter >= 100) {
       setMeter(0);

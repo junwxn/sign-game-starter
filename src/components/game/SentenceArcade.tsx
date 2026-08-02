@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart, Layers3, Lightbulb, Pause } from "lucide-react";
+import { Heart, Layers3, Pause } from "lucide-react";
 import {
   CoachBubble,
   CrystalZone,
@@ -18,11 +18,16 @@ import {
   SignReferenceCard,
   type RecogStatus,
 } from "@/components/game/InputPanel";
-import { HintOverlay, PauseOverlay } from "@/components/game/Overlays";
+import { PauseOverlay } from "@/components/game/Overlays";
 import { SignToken } from "@/components/game/SentencePath";
 import { pick, type Difficulty, type InputMode } from "@/game/data";
 import { useTicker } from "@/game/engine";
-import { MAX_SENTENCE_ENEMIES, makeSentenceEnemy, type SentenceEnemy } from "@/game/sentenceEngine";
+import {
+  MAX_SENTENCE_ENEMIES,
+  SENTENCE_LENGTH_BY_DIFFICULTY,
+  makeSentenceEnemy,
+  type SentenceEnemy,
+} from "@/game/sentenceEngine";
 import { SENTENCE_FEEDBACK, sentenceById, sentenceStars, tokenById } from "@/game/sentences";
 import type { Settings } from "@/game/storage";
 import type { SentenceRunResult } from "@/components/game/SentenceResults";
@@ -161,9 +166,7 @@ export function SentenceArcade({
     { id: number; text: string; tone: "success" | "danger" | "target"; x: number; y: number }[]
   >([]);
   const [paused, setPaused] = useState(false);
-  const [hint, setHint] = useState(false);
   const [cameraReady, setCameraReady] = useState(inputMode !== "camera");
-  const [hintsUsed, setHintsUsed] = useState(0);
   const [crystalFlash, setCrystalFlash] = useState(false);
   const [sentencesDone, setSentencesDone] = useState(0);
   const [signsDone, setSignsDone] = useState(0);
@@ -174,15 +177,16 @@ export function SentenceArcade({
   const weakRef = useRef<string | undefined>(undefined);
   const floatId = useRef(0);
   const finished = useRef(false);
-  const hintedEnemies = useRef(new Set<string>());
 
-  const running = !paused && !hint && cameraReady;
+  const running = !paused && cameraReady;
   const target = useMemo(() => {
     const active = enemies.filter((enemy) => enemy.status !== "defeated");
     return active.find((enemy) => enemy.stage > 0) ?? active.sort((a, b) => b.y - a.y)[0];
   }, [enemies]);
   const currentToken = target ? tokenById(target.sequence[target.stage]) : null;
   const currentSentence = target ? sentenceById(target.sentenceId) : null;
+  const lengthGoal = SENTENCE_LENGTH_BY_DIFFICULTY[difficulty];
+  const spawnInterval = 5500 + (target?.sequence.length ?? lengthGoal.min) * 1800;
 
   const addFloat = useCallback(
     (text: string, tone: "success" | "danger" | "target", x = 50, y = 45) => {
@@ -234,7 +238,7 @@ export function SentenceArcade({
           : [...list, makeSentenceEnemy(unlockedSentences, difficulty)],
       );
     },
-    difficulty === "hard" ? 5200 : difficulty === "easy" ? 8000 : 6500,
+    spawnInterval,
     running,
   );
 
@@ -261,11 +265,10 @@ export function SentenceArcade({
       flowScore: flow,
       bestSentenceId: bestRef.current,
       weakSentenceId: weakRef.current,
-      hints: hintsUsed,
       bestCombo,
       stars: score > 2200 ? 3 : score > 1200 ? 2 : score > 400 ? 1 : 0,
     });
-  }, [score, sentencesDone, signsDone, orderOk, orderTotal, flow, hintsUsed, bestCombo, onFinish]);
+  }, [score, sentencesDone, signsDone, orderOk, orderTotal, flow, bestCombo, onFinish]);
 
   useEffect(() => {
     if (lives <= 0 || time <= 0) end();
@@ -333,22 +336,18 @@ export function SentenceArcade({
       const timeMs = Math.max(1, Date.now() - (target.startedAt || Date.now()));
       const orderPct =
         (target.sequence.length / (target.sequence.length + target.wrongAttempts)) * 100;
-      const sentenceHints = hintedEnemies.current.has(target.id) ? 1 : 0;
       onSentenceComplete(target.sentenceId, {
         completed: true,
         score: gained,
         timeMs,
         orderPct,
-        hintsUsed: sentenceHints,
         stars: sentenceStars({
           completed: true,
-          hintsUsed: sentenceHints,
           orderPct,
           timeMs,
           signCount: target.sequence.length,
         }),
       });
-      hintedEnemies.current.delete(target.id);
       setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "defeated" } : e)));
       setTimeout(() => setEnemies((l) => l.filter((e) => e.id !== target.id)), 420);
     } else {
@@ -379,6 +378,7 @@ export function SentenceArcade({
           <div className="flex flex-col items-center gap-1">
             <HudChip label="Combo" value={`x${combo}`} tone="success" />
             <HudChip label="Time" value={`${Math.max(0, time)}s`} />
+            <HudChip label="Goal" value={lengthGoal.label} />
           </div>
           <div className="flex flex-col items-end gap-1">
             <div className="hud-chip" aria-label={`${lives} lives remaining`}>
@@ -391,17 +391,6 @@ export function SentenceArcade({
               ))}
             </div>
             <div className="flex gap-1">
-              <IconButton
-                label="Hint"
-                className="h-9 w-9"
-                onClick={() => {
-                  setHint(true);
-                  setHintsUsed((h) => h + 1);
-                  if (target) hintedEnemies.current.add(target.id);
-                }}
-              >
-                <Lightbulb className="mx-auto h-4 w-4" aria-hidden />
-              </IconButton>
               <IconButton label="Pause" className="h-9 w-9" onClick={() => setPaused(true)}>
                 <Pause className="mx-auto h-4 w-4" aria-hidden />
               </IconButton>
@@ -556,9 +545,6 @@ export function SentenceArcade({
           onSettings={onOpenSettings}
           onMenu={onMenu}
         />
-      )}
-      {hint && currentToken && (
-        <HintOverlay signId={currentToken.signId ?? "good"} onClose={() => setHint(false)} />
       )}
     </Scene>
   );

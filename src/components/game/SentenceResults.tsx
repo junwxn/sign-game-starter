@@ -10,7 +10,6 @@ export type SentenceRunResult = {
   flowScore: number;
   bestSentenceId?: string;
   weakSentenceId?: string;
-  hints: number;
   bestCombo: number;
   stars: number;
   versus?: {
@@ -61,9 +60,7 @@ export function SentenceResults({
               </p>
               <div className="mt-1 flex items-center justify-center gap-2">
                 <Stars n={result.stars} size={22} />
-                <span className="hud-chip text-sm">
-                  {result.sentencesCompleted} sentences
-                </span>
+                <span className="hud-chip text-sm">{result.sentencesCompleted} sentences</span>
               </div>
             </div>
             {v && (
@@ -90,7 +87,6 @@ export function SentenceResults({
               ["Correct order", `${Math.round(result.orderPct)}%`],
               ["Smooth flow", `${Math.round(result.flowScore)}%`],
               ["Highest combo", `x${result.bestCombo}`],
-              ["Hints used", result.hints],
               ...(v
                 ? ([
                     ["Attacks sent", v.attacksSent],

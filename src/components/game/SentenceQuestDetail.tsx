@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Lightbulb, Pause, Play, RotateCcw, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw, Star } from "lucide-react";
 import {
   CoachBubble,
   FloatingText,
@@ -41,7 +41,6 @@ export type SentenceSessionResult = {
   score: number;
   timeMs: number;
   orderPct: number;
-  hintsUsed: number;
   stars: number;
 };
 
@@ -72,8 +71,6 @@ export function SentenceQuestDetail({
   const [learned, setLearned] = useState<number[]>([]);
   const [coach, setCoach] = useState(SENTENCE_COACH.start);
   const [heroState, setHeroState] = useState<HeroState>("ready");
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [showHint, setShowHint] = useState(false);
   const [celebrate, setCelebrate] = useState<string | null>(null);
 
   /* ---- demonstration playback ---- */
@@ -359,26 +356,12 @@ export function SentenceQuestDetail({
                       {sentence.facialExpression}
                     </p>
                   )}
-                  {showHint && (
-                    <p className="panel !rounded-xl bg-target/25 p-2 text-sm font-bold">
-                      Hint: {token.mistake}
-                    </p>
-                  )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <GameButton tone="success" onClick={() => learnAttempt(true)}>
                       Correct Attempt
                     </GameButton>
                     <GameButton tone="danger" onClick={() => learnAttempt(false)}>
                       Try Again
-                    </GameButton>
-                    <GameButton
-                      tone="neutral"
-                      onClick={() => {
-                        setShowHint((h) => !h);
-                        setHintsUsed((h) => h + 1);
-                      }}
-                    >
-                      <Lightbulb className="h-4 w-4" aria-hidden /> Show Hint
                     </GameButton>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -418,7 +401,6 @@ export function SentenceQuestDetail({
             <FullSentencePractice
               sentenceId={sentenceId}
               settings={settings}
-              hintsUsed={hintsUsed}
               onCreditSigns={creditSigns}
               onRecord={onRecord}
               onExit={() => setMode("overview")}
@@ -434,7 +416,6 @@ export function SentenceQuestDetail({
                   score: 200 + stars * 100,
                   timeMs: 0,
                   orderPct: 100,
-                  hintsUsed: 0,
                   stars,
                 });
                 creditSigns(true);
@@ -461,14 +442,12 @@ export function SentenceQuestDetail({
 function FullSentencePractice({
   sentenceId,
   settings,
-  hintsUsed,
   onCreditSigns,
   onRecord,
   onExit,
 }: {
   sentenceId: string;
   settings: Settings;
-  hintsUsed: number;
   onCreditSigns: (correct: boolean) => void;
   onRecord: (id: string, r: SentenceSessionResult) => void;
   onExit: () => void;
@@ -511,7 +490,6 @@ function FullSentencePractice({
       const timeMs = startedAt.current ? Date.now() - startedAt.current : 0;
       const stars = sentenceStars({
         completed: opts.completed,
-        hintsUsed,
         orderPct: opts.orderPct,
         timeMs,
         signCount: seq.length,
@@ -528,12 +506,11 @@ function FullSentencePractice({
         score,
         timeMs,
         orderPct: opts.orderPct,
-        hintsUsed,
         stars,
       });
       setPos(-1);
     },
-    [hintsUsed, onCreditSigns, onRecord, sentenceId, seq.length],
+    [onCreditSigns, onRecord, sentenceId, seq.length],
   );
 
   const performSign = (measuredConfidence?: number) => {
@@ -724,7 +701,7 @@ function SentenceBuilderGame({
   const [slots, setSlots] = useState<(string | null)[]>(() => seq.map(() => null));
   const [badSlots, setBadSlots] = useState<number[]>([]);
   const [solved, setSolved] = useState(false);
-  const [hint, setHint] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [tries, setTries] = useState(0);
 
   const place = (key: string) => {
@@ -744,23 +721,23 @@ function SentenceBuilderGame({
     setSlots(seq.map(() => null));
     setBadSlots([]);
     setSolved(false);
-    setHint(null);
+    setFeedback(null);
   };
 
   const check = () => {
     if (slots.some((s) => s === null)) {
-      setHint("Fill every slot before checking the order.");
+      setFeedback("Fill every slot before checking the order.");
       return;
     }
     const bad = slots.map((s, i) => (Number(s) === i ? -1 : i)).filter((i) => i >= 0);
     setTries((t) => t + 1);
     if (bad.length === 0) {
       setSolved(true);
-      setHint(null);
+      setFeedback(null);
       onDone(tries === 0 ? 3 : tries === 1 ? 2 : 1);
     } else {
       setBadSlots(bad);
-      setHint(`Clue: the first sign should be ${tokenById(seq[0]).name.toUpperCase()}.`);
+      setFeedback("That order is not correct yet. Rearrange the highlighted signs and try again.");
       setTimeout(() => setBadSlots([]), 700);
     }
   };
@@ -810,7 +787,7 @@ function SentenceBuilderGame({
         )}
       </div>
 
-      {hint && <p className="panel p-2 text-center text-sm font-bold">{hint}</p>}
+      {feedback && <p className="panel p-2 text-center text-sm font-bold">{feedback}</p>}
 
       {solved && (
         <div className="flex flex-col items-center gap-2">
@@ -828,16 +805,6 @@ function SentenceBuilderGame({
         </GameButton>
         <GameButton tone="neutral" onClick={resetGame}>
           Reset
-        </GameButton>
-        <GameButton
-          tone="magic"
-          onClick={() =>
-            setHint(
-              `Clue: sign ${tokenById(seq[0]).name.toUpperCase()} first, then follow the meaning.`,
-            )
-          }
-        >
-          <Lightbulb className="h-4 w-4" aria-hidden /> Hint
         </GameButton>
         <GameButton tone="neutral" onClick={onExit}>
           Back to Quest

@@ -14,7 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { Avatar, CoachBubble, GameButton, Hero, IconButton, Scene } from "@/components/game/kit";
+import { Avatar, GameButton, Hero, IconButton, Scene } from "@/components/game/kit";
 import { CharacterArt, CHARACTERS } from "@/components/game/CharacterArt";
 import { LiveCamera } from "@/components/game/InputPanel";
 import {
@@ -248,7 +248,8 @@ export function ModeSelect({
           />
           <DiffPicker value={difficulty} onChange={(d) => onChange({ difficulty: d })} />
           <p className="text-center text-xs font-bold text-muted-foreground">
-            Easy: 2 signs · Normal: up to 3 · Hard: 3–5 sign sentences
+            Easy builds 2-sign foundations · Normal connects 3 signs · Hard practises every sign in
+            the full long sentence
           </p>
           <GameButton tone="play" size="lg" className="w-full" onClick={onStart}>
             START SENTENCE RUN
@@ -500,8 +501,4 @@ export function OpponentFoundCard({ o }: { o: Opponent }) {
       </div>
     </div>
   );
-}
-
-export function CoachHint({ message }: { message: string }) {
-  return <CoachBubble message={message} className="absolute bottom-4 left-4 z-30" />;
 }

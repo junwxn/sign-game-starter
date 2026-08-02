@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart, Lightbulb, Pause } from "lucide-react";
+import { Heart, Pause } from "lucide-react";
 import {
   CoachBubble,
   CrystalZone,
@@ -20,7 +20,7 @@ import {
   SignReferenceCard,
   type RecogStatus,
 } from "@/components/game/InputPanel";
-import { HintOverlay, PauseOverlay } from "@/components/game/Overlays";
+import { PauseOverlay } from "@/components/game/Overlays";
 import { COACH_LINES, pick, signById, type Difficulty, type InputMode } from "@/game/data";
 import { MAX_ENEMIES, makeEnemy, useTicker, type Enemy } from "@/game/engine";
 import type { Settings } from "@/game/storage";
@@ -70,8 +70,6 @@ export function SinglePlayer({
   const [coach, setCoach] = useState("Ready hands? Sign the orange word!");
   const [floats, setFloats] = useState<Float[]>([]);
   const [paused, setPaused] = useState(false);
-  const [hint, setHint] = useState(false);
-  const [hintsUsed, setHintsUsed] = useState(0);
   const [shake, setShake] = useState(false);
   const [crystalFlash, setCrystalFlash] = useState(false);
   const [defeated, setDefeated] = useState(0);
@@ -82,7 +80,7 @@ export function SinglePlayer({
   const finished = useRef(false);
   const busy = useRef(false);
 
-  const running = !paused && !hint;
+  const running = !paused;
 
   const target = useMemo(
     () => enemies.filter((e) => e.status === "idle").sort((a, b) => b.y - a.y)[0],
@@ -180,14 +178,13 @@ export function SinglePlayer({
         accuracy: list.length ? Math.round((correct / list.length) * 100) : 0,
         defeated,
         missed,
-        hints: hintsUsed,
         duration: SESSION_SECONDS - time,
         perSign,
         weakSigns: perSign.filter((p) => p.accuracy < 60).map((p) => p.signId),
       },
       list,
     );
-  }, [score, bestCombo, defeated, missed, hintsUsed, time, onFinish]);
+  }, [score, bestCombo, defeated, missed, time, onFinish]);
 
   useEffect(() => {
     if (lives <= 0 || time <= 0) end();
@@ -309,16 +306,6 @@ export function SinglePlayer({
               ))}
             </div>
             <div className="flex gap-1">
-              <IconButton
-                label="Hint"
-                className="h-9 w-9"
-                onClick={() => {
-                  setHint(true);
-                  setHintsUsed((h) => h + 1);
-                }}
-              >
-                <Lightbulb className="mx-auto h-4 w-4" aria-hidden />
-              </IconButton>
               <IconButton label="Pause" className="h-9 w-9" onClick={() => setPaused(true)}>
                 <Pause className="mx-auto h-4 w-4" aria-hidden />
               </IconButton>
@@ -426,7 +413,6 @@ export function SinglePlayer({
           onMenu={onMenu}
         />
       )}
-      {hint && target && <HintOverlay signId={target.signId} onClose={() => setHint(false)} />}
       <span className="sr-only" aria-live="polite">
         {target ? `Current target sign: ${signById(target.signId).name}` : ""}
       </span>

@@ -9,7 +9,6 @@ export type SingleResult = {
   accuracy: number;
   defeated: number;
   missed: number;
-  hints: number;
   duration: number;
   perSign: { signId: string; accuracy: number; stars: number; improved: boolean }[];
   weakSigns: string[];
@@ -105,7 +104,6 @@ export function SingleResults({
               ["Accuracy", `${result.accuracy}%`],
               ["Enemies defeated", result.defeated],
               ["Enemies missed", result.missed],
-              ["Hints used", result.hints],
               ["Session", `${result.duration}s`],
             ].map(([k, v]) => (
               <div key={k as string} className="hud-chip w-full justify-between !rounded-xl">
