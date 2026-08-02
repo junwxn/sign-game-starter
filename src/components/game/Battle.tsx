@@ -17,7 +17,7 @@ import {
 import {
   DevPanel,
   KeyboardInput,
-  MockCamera,
+  LiveCamera,
   type RecogStatus,
 } from "@/components/game/InputPanel";
 import { PauseOverlay } from "@/components/game/Overlays";
@@ -278,7 +278,11 @@ export function Battle({
     void kinds;
   }
 
-  function resolve(kind: "correct" | "wrong" | "uncertain", fast?: boolean) {
+  function resolve(
+    kind: "correct" | "wrong" | "uncertain",
+    fast?: boolean,
+    measuredConfidence?: number,
+  ) {
     if (!target || busy.current || !running) return;
     busy.current = true;
     setStatus("checking");
@@ -287,6 +291,7 @@ export function Battle({
       busy.current = false;
       stats.current.total += 1;
       if (kind === "correct") {
+        const resultConfidence = measuredConfidence ?? 78 + Math.floor(Math.random() * 20);
         const elapsed = fast ? 1200 : Date.now() - target.bornAt;
         const rating = speedRating(elapsed);
         if (rating.label !== "STEADY") stats.current.bestSpeed = rating.label;
@@ -297,7 +302,7 @@ export function Battle({
         setCombo(nextCombo);
         setBestCombo((b) => Math.max(b, nextCombo));
         setStatus("accepted");
-        setConfidence(78 + Math.floor(Math.random() * 20));
+        setConfidence(resultConfidence);
         setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "defeated" } : e)));
         setTimeout(() => setEnemies((l) => l.filter((e) => e.id !== target.id)), 400);
         addFloat(`+${gained}`, "success", target.x, target.y);
@@ -581,19 +586,25 @@ export function Battle({
             {inputMode === "camera" ? (
               <div className="flex items-end gap-3">
                 <div className="w-40 sm:w-52">
-                  <MockCamera
-                    status={status}
-                    confidence={confidence}
+                  <LiveCamera
+                    targets={target ? [target.signId] : []}
+                    active={running && !!target}
                     showConfidence={settings.showConfidence}
+                    onResult={(result) =>
+                      resolve(
+                        result.accepted ? "correct" : "wrong",
+                        false,
+                        Math.round(result.confidence * 100),
+                      )
+                    }
+                    onError={() => setStatus("nohands")}
                   />
                 </div>
                 <div className="space-y-2">
                   <span className="word-label block bg-target text-center text-lg text-[oklch(0.2_0.05_50)]">
                     {target?.word ?? "—"}
                   </span>
-                  <GameButton tone="success" onClick={() => resolve("correct")}>
-                    Perform sign
-                  </GameButton>
+                  <span className="hud-chip block text-center text-xs">Show sign to camera</span>
                 </div>
               </div>
             ) : (

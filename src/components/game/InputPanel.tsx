@@ -1,17 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Send } from "lucide-react";
 import { GameButton, Meter } from "@/components/game/kit";
 import { cn } from "@/lib/utils";
+import { LiveRecognizer } from "@/recognizer/LiveRecognizer";
+import type { AttemptResult } from "@/recognizer/types";
 
 export type RecogStatus =
-  | "idle"
-  | "framing"
-  | "hands"
-  | "checking"
-  | "accepted"
-  | "almost"
-  | "rejected"
-  | "nohands";
+  "idle" | "framing" | "hands" | "checking" | "accepted" | "almost" | "rejected" | "nohands";
 
 export const statusText: Record<RecogStatus, string> = {
   idle: "Move into frame",
@@ -69,46 +64,109 @@ export function RecognitionStatus({
 }
 
 /** Stylised mock camera — no webcam access at any point. */
-export function MockCamera({
-  status,
-  confidence,
+export function LiveCamera({
+  targets,
   showConfidence,
+  active = true,
+  onResult,
+  onError,
 }: {
-  status: RecogStatus;
-  confidence: number;
+  targets: string[];
   showConfidence: boolean;
+  active?: boolean;
+  onResult: (result: AttemptResult) => void;
+  onError?: (error: Error) => void;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+  const stateRef = useRef<HTMLParagraphElement>(null);
+  const recognizerRef = useRef<LiveRecognizer | null>(null);
+  const callbacksRef = useRef({ onResult, onError });
+  const [status, setStatus] = useState<RecogStatus>("framing");
+  const [confidence, setConfidence] = useState(0);
+  const targetKey = targets.join("\0");
+
+  callbacksRef.current = { onResult, onError };
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    const video = videoRef.current;
+    const overlay = overlayRef.current;
+    const state = stateRef.current;
+    if (!panel || !video || !overlay || !state) return;
+
+    const recognizer = new LiveRecognizer({ panel, video, overlay, state });
+    recognizerRef.current = recognizer;
+
+    const handleStart = () => setStatus("checking");
+    const handleCancel = () => setStatus("hands");
+    const handleResult = (result: AttemptResult) => {
+      setConfidence(Math.round(result.confidence * 100));
+      setStatus(result.accepted ? "accepted" : "rejected");
+      callbacksRef.current.onResult(result);
+    };
+    const handlePreview = (message: string) => {
+      const match = message.match(/\b(\d{1,3})%/);
+      if (match) setConfidence(Number(match[1]));
+      if (message.includes("watching")) setStatus("hands");
+      if (message.includes("hold")) setStatus("checking");
+    };
+    const handleError = (error: Error) => {
+      setStatus("nohands");
+      callbacksRef.current.onError?.(error);
+    };
+
+    recognizer.on("attemptStart", handleStart);
+    recognizer.on("attemptCancel", handleCancel);
+    recognizer.on("attemptResult", handleResult);
+    recognizer.on("inputPreview", handlePreview);
+    recognizer.on("error", handleError);
+    recognizer.setActiveTargets([]);
+    void recognizer.start().catch(handleError);
+
+    return () => {
+      recognizer.off("attemptStart", handleStart);
+      recognizer.off("attemptCancel", handleCancel);
+      recognizer.off("attemptResult", handleResult);
+      recognizer.off("inputPreview", handlePreview);
+      recognizer.off("error", handleError);
+      recognizer.stop();
+      if (recognizerRef.current === recognizer) recognizerRef.current = null;
+    };
+    // The recognizer owns the camera for this component's lifetime.
+  }, []);
+
+  useEffect(() => {
+    recognizerRef.current?.setActiveTargets(active && targetKey ? targetKey.split("\0") : []);
+  }, [active, targetKey]);
+
   return (
-    <div className="panel relative aspect-[4/3] w-full overflow-hidden !rounded-2xl bg-[color-mix(in_oklab,var(--sky-deep)_75%,var(--ink))] p-0">
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-70"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 42%, color-mix(in oklab, var(--magic) 45%, transparent), transparent 62%)",
-        }}
+    <div
+      ref={panelRef}
+      className="panel relative aspect-[4/3] w-full overflow-hidden !rounded-2xl bg-ink p-0"
+    >
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
+        autoPlay
+        muted
+        playsInline
+        aria-label="Live webcam preview"
       />
-      {/* face + hand guides */}
-      <div aria-hidden className="absolute inset-0 grid place-items-center">
-        <div className="relative h-[72%] w-[58%]">
-          <span className="absolute left-1/2 top-0 h-16 w-16 -translate-x-1/2 rounded-full border-[3px] border-dashed border-cream/70" />
-          <span className="absolute bottom-6 left-0 h-14 w-14 rounded-2xl border-[3px] border-dashed border-target/80" />
-          <span className="absolute bottom-6 right-0 h-14 w-14 rounded-2xl border-[3px] border-dashed border-target/80" />
-          <span className="absolute bottom-0 left-1/2 h-24 w-24 -translate-x-1/2 rounded-t-full bg-cream/15" />
-          {[..."123456"].map((_, i) => (
-            <span
-              key={i}
-              className="absolute h-2 w-2 rounded-full bg-success anim-bob"
-              style={{
-                left: `${12 + i * 14}%`,
-                bottom: `${18 + (i % 3) * 12}%`,
-                animationDelay: `${i * 0.25}s`,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-      <span className="absolute left-2 top-2 hud-chip text-[0.6rem]">PROTOTYPE PREVIEW</span>
+      <canvas
+        ref={overlayRef}
+        className="pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover"
+        aria-hidden
+      />
+      <span className="absolute left-2 top-2 hud-chip text-[0.6rem]">LIVE CV</span>
+      <p
+        ref={stateRef}
+        className="absolute inset-x-2 top-2 ml-16 truncate text-right font-mono text-[0.55rem] font-bold text-cream drop-shadow"
+        role="status"
+      >
+        Loading camera…
+      </p>
       <div className="absolute inset-x-2 bottom-2 text-cream">
         <RecognitionStatus status={status} confidence={confidence} show={showConfidence} />
       </div>

@@ -1,5 +1,6 @@
-import { CV } from '../config';
-import { FEAT_DIM, T, type Model } from './signfeat.js';
+import { CV } from "../config";
+import { VOCAB } from "../vocab";
+import { FEAT_DIM, T, type Model } from "./signfeat.js";
 
 function assetUrl(path: string): string {
   return new URL(`${import.meta.env.BASE_URL}${path}`, window.location.href).href;
@@ -13,7 +14,16 @@ export async function loadSignModel(path = CV.modelPath): Promise<Model> {
 
   const model = (await response.json()) as Model;
   if (!Array.isArray(model.labels) || model.labels.length === 0 || !Array.isArray(model.layers)) {
-    throw new Error('Sign model is malformed.');
+    throw new Error("Sign model is malformed.");
+  }
+  const modelLabels = model.labels.map((label) => label.toLowerCase());
+  if (
+    modelLabels.length !== VOCAB.length ||
+    VOCAB.some((label, index) => modelLabels[index] !== label)
+  ) {
+    throw new Error(
+      `Sign model labels do not match the game word bank (${modelLabels.join(", ")}).`,
+    );
   }
   if (model.meta?.featDim !== FEAT_DIM || model.meta?.T !== T) {
     throw new Error(

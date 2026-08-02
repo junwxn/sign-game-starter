@@ -33,5 +33,6 @@ npm run dev
 
 The trained sign model is in `public/models`, with tracking and verification in
 `src/cv`. The recognizer contract and live webcam adapter are in
-`src/recognizer`. The React camera panels are still prototype UI and need a
-React adapter before live recognizer results drive gameplay.
+`src/recognizer`. Camera mode uses the live webcam in gameplay and practice.
+Its word and sentence banks are restricted to the model's 11 supported labels.
+Run on localhost or HTTPS and grant camera permission when prompted.

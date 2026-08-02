@@ -13,7 +13,7 @@ import {
   Stars,
   type HeroState,
 } from "@/components/game/kit";
-import { DevPanel, MockCamera, type RecogStatus } from "@/components/game/InputPanel";
+import { DevPanel, LiveCamera, type RecogStatus } from "@/components/game/InputPanel";
 import { SentencePath, SequenceProgressLine, SignToken } from "@/components/game/SentencePath";
 import {
   SENTENCE_COACH,
@@ -24,7 +24,7 @@ import {
   sentenceStars,
   tokenById,
 } from "@/game/sentences";
-import { pick } from "@/game/data";
+import { pick, SIGNS } from "@/game/data";
 import type { SentenceProgress, Settings } from "@/game/storage";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +87,6 @@ export function SentenceQuestDetail({
     }, step);
     return () => clearInterval(t);
   }, [playing, slow, seq.length]);
-
 
   const flashHero = useCallback((s: HeroState) => {
     setHeroState(s);
@@ -304,11 +303,7 @@ export function SentenceQuestDetail({
                 >
                   Learn Sentence
                 </GameButton>
-                <GameButton
-                  tone="success"
-                  size="lg"
-                  onClick={() => setMode("practice")}
-                >
+                <GameButton tone="success" size="lg" onClick={() => setMode("practice")}>
                   Practise Full Sentence
                 </GameButton>
                 <GameButton tone="magic" onClick={() => setMode("build")}>
@@ -487,6 +482,7 @@ function FullSentencePractice({
   const startedAt = useRef<number>(0);
 
   const running = pos >= 0;
+  const currentSignId = running ? tokenById(seq[pos]).signId : undefined;
 
   const reset = (announce = true) => {
     setPos(-1);
@@ -534,11 +530,11 @@ function FullSentencePractice({
     [hintsUsed, onCreditSigns, onRecord, sentenceId, seq.length],
   );
 
-  const performSign = () => {
+  const performSign = (measuredConfidence?: number) => {
     if (!running) return;
     setDone((d) => [...d, pos]);
     setFlow((f) => Math.min(100, f + 10));
-    setAccuracy((a) => Math.min(100, a + 6));
+    setAccuracy((a) => measuredConfidence ?? Math.min(100, a + 6));
     setStatus("accepted");
     if (pos >= seq.length - 1) {
       setCoach(pick(SENTENCE_FEEDBACK.perfect));
@@ -614,11 +610,21 @@ function FullSentencePractice({
       </div>
 
       <div className="grid gap-3 md:grid-cols-[16rem_minmax(0,1fr)]">
-        <MockCamera
-          status={status}
-          confidence={accuracy}
-          showConfidence={settings.showConfidence}
-        />
+        {settings.inputMode === "camera" ? (
+          <LiveCamera
+            targets={currentSignId ? [currentSignId] : []}
+            active={running && !!currentSignId}
+            showConfidence={settings.showConfidence}
+            onResult={(result) => performSign(Math.round(result.confidence * 100))}
+            onError={() => setStatus("nohands")}
+          />
+        ) : (
+          <div className="panel grid min-h-48 place-items-center p-4 text-center">
+            <p className="font-display text-sm font-black uppercase text-muted-foreground">
+              Keyboard practice controls
+            </p>
+          </div>
+        )}
         <div className="space-y-2">
           <CoachBubble message={coach} />
           <Meter value={flow} label="Flow / rhythm" tone="magic" />
@@ -635,9 +641,13 @@ function FullSentencePractice({
             <GameButton tone="play" onClick={start}>
               Start Sentence
             </GameButton>
-            <GameButton tone="success" disabled={!running} onClick={performSign}>
-              Perform Sign
-            </GameButton>
+            {settings.inputMode === "keyboard" ? (
+              <GameButton tone="success" disabled={!running} onClick={() => performSign()}>
+                Perform Sign
+              </GameButton>
+            ) : (
+              <span className="hud-chip self-center text-xs">Show each sign to camera</span>
+            )}
             <GameButton tone="danger" onClick={() => reset()}>
               Try Again
             </GameButton>
@@ -844,8 +854,8 @@ function MissingSignGame({
     [round, sentenceId],
   );
   const choices = useMemo(() => {
-    const distractors = ["please", "sorry", "yes", "no", "friend", "good", "want", "you", "me"]
-      .filter((d) => !seq.includes(d))
+    const distractors = SIGNS.map((sign) => sign.id)
+      .filter((id) => !seq.includes(id))
       .slice(0, 2);
     return shuffle([seq[missingIndex], ...distractors]);
     // eslint-disable-next-line react-hooks/exhaustive-deps

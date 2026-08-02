@@ -11,7 +11,7 @@ import {
   Scene,
   type HeroState,
 } from "@/components/game/kit";
-import { DevPanel, MockCamera, type RecogStatus } from "@/components/game/InputPanel";
+import { DevPanel, LiveCamera, type RecogStatus } from "@/components/game/InputPanel";
 import { HintOverlay, PauseOverlay } from "@/components/game/Overlays";
 import { SignToken } from "@/components/game/SentencePath";
 import { pick, type Difficulty, type InputMode } from "@/game/data";
@@ -259,7 +259,7 @@ export function SentenceArcade({
     if (lives <= 0 || time <= 0) end();
   }, [lives, time, end]);
 
-  const resolve = (kind: "correct" | "wrong" | "nohands") => {
+  const resolve = (kind: "correct" | "wrong" | "nohands", measuredConfidence?: number) => {
     if (!target || !running) return;
     if (kind === "nohands") {
       setStatus("nohands");
@@ -288,10 +288,11 @@ export function SentenceArcade({
     /* correct stage */
     setOrderOk((o) => o + 1);
     setStatus("accepted");
-    setConfidence(78 + Math.floor(Math.random() * 18));
+    const resultConfidence = measuredConfidence ?? 78 + Math.floor(Math.random() * 18);
+    setConfidence(resultConfidence);
     setFlow((f) => Math.min(100, f + 6));
     setSignsDone((s) => s + 1);
-    onSignAttempt(currentToken?.signId ?? target.sequence[target.stage], true, 82);
+    onSignAttempt(currentToken?.signId ?? target.sequence[target.stage], true, resultConfidence);
     const nextStage = target.stage + 1;
     const complete = nextStage >= target.sequence.length;
     const gained = complete ? 180 + target.sequence.length * 60 + combo * 20 : 60 + combo * 10;
@@ -398,10 +399,17 @@ export function SentenceArcade({
           <div className="flex w-full max-w-2xl items-end gap-3">
             {inputMode === "camera" && (
               <div className="w-40 shrink-0 sm:w-52">
-                <MockCamera
-                  status={status}
-                  confidence={confidence}
+                <LiveCamera
+                  targets={currentToken?.signId ? [currentToken.signId] : []}
+                  active={running && !!currentToken?.signId}
                   showConfidence={settings.showConfidence}
+                  onResult={(result) =>
+                    resolve(
+                      result.accepted ? "correct" : "wrong",
+                      Math.round(result.confidence * 100),
+                    )
+                  }
+                  onError={() => resolve("nohands")}
                 />
               </div>
             )}
@@ -414,14 +422,18 @@ export function SentenceArcade({
                   {currentToken?.name ?? "—"}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <GameButton tone="success" onClick={() => resolve("correct")}>
-                  Perform Stage Sign
-                </GameButton>
-                <GameButton tone="danger" onClick={() => resolve("wrong")}>
-                  Wrong Sign
-                </GameButton>
-              </div>
+              {inputMode === "camera" ? (
+                <span className="hud-chip block text-center text-xs">Show sign to camera</span>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <GameButton tone="success" onClick={() => resolve("correct")}>
+                    Perform Stage Sign
+                  </GameButton>
+                  <GameButton tone="danger" onClick={() => resolve("wrong")}>
+                    Wrong Sign
+                  </GameButton>
+                </div>
+              )}
             </div>
           </div>
           <div className="ml-auto">
@@ -446,7 +458,7 @@ export function SentenceArcade({
         />
       )}
       {hint && currentToken && (
-        <HintOverlay signId={currentToken.signId ?? "hello"} onClose={() => setHint(false)} />
+        <HintOverlay signId={currentToken.signId ?? "good"} onClose={() => setHint(false)} />
       )}
     </Scene>
   );

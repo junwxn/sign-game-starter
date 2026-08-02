@@ -14,6 +14,7 @@
  */
 
 import { SIGNS, signById } from "./data";
+import { VOCAB } from "@/vocab";
 
 export type SentenceDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
@@ -202,7 +203,12 @@ const LIBRARY_TOKENS: SentenceToken[] = SIGNS.map((s) => ({
   signId: s.id,
 }));
 
-export const SENTENCE_TOKENS: SentenceToken[] = [...LIBRARY_TOKENS, ...EXTRA_TOKENS];
+const MODEL_VOCAB_SET = new Set<string>(VOCAB);
+
+export const SENTENCE_TOKENS: SentenceToken[] = [
+  ...EXTRA_TOKENS.filter((token) => MODEL_VOCAB_SET.has(token.id)),
+  ...LIBRARY_TOKENS,
+];
 
 const TOKEN_MAP = new Map(SENTENCE_TOKENS.map((t) => [t.id, t]));
 
@@ -237,7 +243,7 @@ export const SENTENCE_CATEGORIES: (SentenceCategory | "All")[] = [
   "Friends and Family",
 ];
 
-export const SENTENCES: SignSentence[] = [
+const LEGACY_SENTENCES: SignSentence[] = [
   {
     id: "hello-how-are-you",
     title: "Friendly Greeting",
@@ -400,6 +406,89 @@ export const SENTENCES: SignSentence[] = [
     commonMistakes: ["Dropping the question face early", "Opening the EAT hand too wide"],
     isUnlocked: true,
   },
+];
+
+const MODEL_SENTENCES: SignSentence[] = [
+  {
+    id: "good-morning",
+    title: "Good Morning",
+    englishMeaning: "Good morning.",
+    signSequence: ["morning", "good"],
+    category: "Greetings",
+    difficulty: "Beginner",
+    facialExpression: "Friendly smile.",
+    signingNotes: ["Keep the transition smooth."],
+    commonMistakes: ["Pausing too long between signs"],
+    isUnlocked: true,
+  },
+  {
+    id: "want-coffee",
+    title: "Coffee Break",
+    englishMeaning: "Want coffee.",
+    signSequence: ["coffee", "want"],
+    category: "Food and Drink",
+    difficulty: "Beginner",
+    facialExpression: "Neutral statement face.",
+    signingNotes: ["Use the exact model variants shown in the Sign Bank references."],
+    commonMistakes: ["Using a different COFFEE variant"],
+    isUnlocked: true,
+  },
+  {
+    id: "eat-now",
+    title: "Meal Time",
+    englishMeaning: "Eat now.",
+    signSequence: ["now", "eat"],
+    category: "Food and Drink",
+    difficulty: "Beginner",
+    facialExpression: "Neutral statement face.",
+    signingNotes: ["Establish the time marker before the action."],
+    commonMistakes: ["Reversing the sequence"],
+    isUnlocked: true,
+  },
+  {
+    id: "go-home",
+    title: "Heading Home",
+    englishMeaning: "Go home.",
+    signSequence: ["home", "go"],
+    category: "Daily Needs",
+    difficulty: "Intermediate",
+    facialExpression: "Neutral statement face.",
+    signingNotes: ["Establish the destination before GO."],
+    commonMistakes: ["Signing GO in the wrong direction"],
+    isUnlocked: true,
+  },
+  {
+    id: "finish-eating",
+    title: "Meal Finished",
+    englishMeaning: "Finished eating.",
+    signSequence: ["eat", "finish"],
+    category: "Food and Drink",
+    difficulty: "Intermediate",
+    facialExpression: "Relaxed statement face.",
+    signingNotes: ["Complete EAT before moving into FINISH."],
+    commonMistakes: ["Blending the two model windows together"],
+    isUnlocked: true,
+  },
+  {
+    id: "where-toilet",
+    title: "Find the Toilet",
+    englishMeaning: "Where is the toilet?",
+    signSequence: ["toilet", "where"],
+    category: "Daily Needs",
+    difficulty: "Intermediate",
+    facialExpression: "Raised eyebrows and a slight head tilt.",
+    signingNotes: ["Keep the question expression through WHERE."],
+    commonMistakes: ["Dropping the question expression"],
+    isUnlocked: true,
+  },
+];
+
+/** Sentence play is restricted to labels the loaded model can verify. */
+export const SENTENCES: SignSentence[] = [
+  ...MODEL_SENTENCES,
+  ...LEGACY_SENTENCES.filter((sentence) =>
+    sentence.signSequence.every((token) => MODEL_VOCAB_SET.has(token)),
+  ),
 ];
 
 export const sentenceById = (id: string) => SENTENCES.find((s) => s.id === id)!;

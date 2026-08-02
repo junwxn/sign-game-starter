@@ -1,3 +1,6 @@
+import { SIGN_REFERENCES } from "@/signReferences";
+import { VOCAB, type ModelSignId } from "@/vocab";
+
 export type EnemyKind = "basic" | "fast" | "shield" | "wave";
 
 export const enemyMeta: Record<EnemyKind, { name: string; blurb: string; speed: number }> = {
@@ -10,7 +13,16 @@ export const enemyMeta: Record<EnemyKind, { name: string; blurb: string; speed: 
 export type Sign = {
   id: string;
   name: string;
-  category: "Greetings" | "Needs" | "Courtesy" | "Answers" | "People";
+  category:
+    | "Food and Drink"
+    | "Actions"
+    | "Places"
+    | "Time"
+    | "Answers"
+    | "Greetings"
+    | "Needs"
+    | "Courtesy"
+    | "People";
   emoji: string;
   handShape: string;
   movement: string;
@@ -20,7 +32,7 @@ export type Sign = {
   referenceLabel: string;
 };
 
-export const SIGNS: Sign[] = [
+const LEGACY_SIGNS: Sign[] = [
   {
     id: "hello",
     name: "Hello",
@@ -159,6 +171,39 @@ export const SIGNS: Sign[] = [
     referenceLabel: "SgSL Sign Bank",
   },
 ];
+
+const MODEL_SIGN_METADATA: Record<ModelSignId, Pick<Sign, "name" | "category" | "emoji">> = {
+  coffee: { name: "Coffee", category: "Food and Drink", emoji: "☕" },
+  eat: { name: "Eat", category: "Food and Drink", emoji: "🍚" },
+  finish: { name: "Finish", category: "Actions", emoji: "🏁" },
+  go: { name: "Go", category: "Actions", emoji: "🚶" },
+  good: { name: "Good", category: "Answers", emoji: "👍" },
+  home: { name: "Home", category: "Places", emoji: "🏠" },
+  morning: { name: "Morning", category: "Time", emoji: "🌅" },
+  now: { name: "Now", category: "Time", emoji: "⏱️" },
+  toilet: { name: "Toilet", category: "Places", emoji: "🚻" },
+  want: { name: "Want", category: "Actions", emoji: "🫴" },
+  where: { name: "Where", category: "Places", emoji: "📍" },
+};
+
+const legacyById = new Map(LEGACY_SIGNS.map((sign) => [sign.id, sign]));
+
+/** The playable word bank is generated from the trained model's labels. */
+export const SIGNS: Sign[] = VOCAB.map((id) => {
+  const metadata = MODEL_SIGN_METADATA[id];
+  const reference = SIGN_REFERENCES[id];
+  const legacy = legacyById.get(id);
+  return {
+    id,
+    ...metadata,
+    handShape: legacy?.handShape ?? `Follow the verified ${reference.variant} handshape.`,
+    movement: legacy?.movement ?? `Perform the movement shown for ${reference.variant}.`,
+    mistake: legacy?.mistake ?? "Do not substitute a different Sign Bank variant.",
+    referenceUrl: reference.sourceUrl,
+    referenceImage: reference.mediaUrl,
+    referenceLabel: `SgSL Sign Bank · ${reference.variant}`,
+  };
+});
 
 export const signById = (id: string) => SIGNS.find((s) => s.id === id)!;
 

@@ -15,7 +15,7 @@ import {
 import {
   DevPanel,
   KeyboardInput,
-  MockCamera,
+  LiveCamera,
   type RecogStatus,
 } from "@/components/game/InputPanel";
 import { HintOverlay, PauseOverlay } from "@/components/game/Overlays";
@@ -204,7 +204,10 @@ export function SinglePlayer({
     addFloat("MISSED!", "danger", 50, 70);
   }
 
-  function resolve(kind: "correct" | "wrong" | "uncertain" | "nohands") {
+  function resolve(
+    kind: "correct" | "wrong" | "uncertain" | "nohands",
+    measuredConfidence?: number,
+  ) {
     if (!target || busy.current || !running) return;
     if (kind === "nohands") {
       setStatus("nohands");
@@ -219,6 +222,7 @@ export function SinglePlayer({
     setTimeout(() => {
       busy.current = false;
       if (kind === "correct") {
+        const resultConfidence = measuredConfidence ?? 78 + Math.floor(Math.random() * 20);
         const gained = 100 + combo * 15;
         const nextCombo = combo + 1;
         setScore((s) => s + gained);
@@ -226,7 +230,7 @@ export function SinglePlayer({
         setBestCombo((b) => Math.max(b, nextCombo));
         setDefeated((d) => d + 1);
         setStatus("accepted");
-        setConfidence(78 + Math.floor(Math.random() * 20));
+        setConfidence(resultConfidence);
         setEnemies((l) => l.map((e) => (e.id === target.id ? { ...e, status: "defeated" } : e)));
         setTimeout(() => setEnemies((l) => l.filter((e) => e.id !== target.id)), 420);
         addFloat(`+${gained}`, "success", target.x, target.y);
@@ -238,7 +242,11 @@ export function SinglePlayer({
         );
         flashHero(nextCombo >= 5 ? "combo" : "correct");
         setCoach(pick(COACH_LINES.correct));
-        attempts.current.push({ signId: target.signId, correct: true, confidence: 85 });
+        attempts.current.push({
+          signId: target.signId,
+          correct: true,
+          confidence: resultConfidence,
+        });
       } else {
         const uncertain = kind === "uncertain";
         setStatus(uncertain ? "almost" : "rejected");
@@ -358,19 +366,24 @@ export function SinglePlayer({
             {inputMode === "camera" ? (
               <div className="flex items-end gap-3">
                 <div className="w-44 sm:w-56">
-                  <MockCamera
-                    status={status}
-                    confidence={confidence}
+                  <LiveCamera
+                    targets={target ? [target.signId] : []}
+                    active={running && !!target}
                     showConfidence={settings.showConfidence}
+                    onResult={(result) =>
+                      resolve(
+                        result.accepted ? "correct" : "wrong",
+                        Math.round(result.confidence * 100),
+                      )
+                    }
+                    onError={() => setStatus("nohands")}
                   />
                 </div>
                 <div className="space-y-2">
                   <span className="word-label block bg-target text-center text-lg text-[oklch(0.2_0.05_50)]">
                     {target?.word ?? "—"}
                   </span>
-                  <GameButton tone="success" onClick={() => resolve("correct")}>
-                    Perform sign
-                  </GameButton>
+                  <span className="hud-chip block text-center text-xs">Show sign to camera</span>
                 </div>
               </div>
             ) : (

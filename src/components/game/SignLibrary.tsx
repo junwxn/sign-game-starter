@@ -10,7 +10,7 @@ import {
   SignMark,
   Stars,
 } from "@/components/game/kit";
-import { MockCamera, type RecogStatus } from "@/components/game/InputPanel";
+import { LiveCamera, type RecogStatus } from "@/components/game/InputPanel";
 import { SentenceQuests, SegmentedControl } from "@/components/game/SentenceQuests";
 import {
   SentenceQuestDetail,
@@ -20,7 +20,7 @@ import { SIGNS, signById } from "@/game/data";
 import type { Mastery, SentenceProgress, Settings } from "@/game/storage";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES = ["All", "Greetings", "Needs", "Courtesy", "Answers", "People"] as const;
+const CATEGORIES = ["All", "Food and Drink", "Actions", "Places", "Time", "Answers"] as const;
 
 export function SignLibrary({
   mastery,
@@ -215,8 +215,7 @@ export function SignLibrary({
                   <span className="font-display text-base font-black">{s.name}</span>
                   <Stars n={m?.stars ?? 0} />
                   <span className="text-[0.65rem] font-bold uppercase tracking-widest opacity-70">
-                    Best {m?.best ?? 0}%
-                    {favourites.includes(s.id) && " ★"}
+                    Best {m?.best ?? 0}%{favourites.includes(s.id) && " ★"}
                   </span>
                 </button>
               </li>
@@ -254,10 +253,10 @@ function SignDetail({
   const [status, setStatus] = useState<RecogStatus>("hands");
   const [coach, setCoach] = useState("Ready hands? Shape first, then movement.");
 
-  const attempt = (correct: boolean) => {
-    const conf = correct
-      ? 74 + Math.floor(Math.random() * 24)
-      : 28 + Math.floor(Math.random() * 22);
+  const attempt = (correct: boolean, measuredConfidence?: number) => {
+    const conf =
+      measuredConfidence ??
+      (correct ? 74 + Math.floor(Math.random() * 24) : 28 + Math.floor(Math.random() * 22));
     setConfidence(conf);
     setStatus(correct ? "accepted" : "almost");
     setTries((t) => t + 1);
@@ -355,11 +354,22 @@ function SignDetail({
           ) : (
             <div className="panel space-y-3 p-4">
               <div className="grid gap-3 sm:grid-cols-[16rem_minmax(0,1fr)]">
-                <MockCamera
-                  status={status}
-                  confidence={confidence}
-                  showConfidence={settings.showConfidence}
-                />
+                {settings.inputMode === "camera" ? (
+                  <LiveCamera
+                    targets={[signId]}
+                    showConfidence={settings.showConfidence}
+                    onResult={(result) =>
+                      attempt(result.accepted, Math.round(result.confidence * 100))
+                    }
+                    onError={() => setStatus("nohands")}
+                  />
+                ) : (
+                  <div className="panel grid min-h-48 place-items-center p-4 text-center">
+                    <p className="font-display text-sm font-black uppercase text-muted-foreground">
+                      Use the practice controls to record a keyboard-mode attempt.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <CoachBubble message={coach} />
                   <Meter
@@ -370,14 +380,16 @@ function SignDetail({
                   <div className="flex gap-2 text-xs">
                     <span className="hud-chip">Attempts {tries}</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <GameButton tone="success" onClick={() => attempt(true)}>
-                      Correct Attempt
-                    </GameButton>
-                    <GameButton tone="danger" onClick={() => attempt(false)}>
-                      Try Again
-                    </GameButton>
-                  </div>
+                  {settings.inputMode === "keyboard" && (
+                    <div className="flex flex-wrap gap-2">
+                      <GameButton tone="success" onClick={() => attempt(true)}>
+                        Correct Attempt
+                      </GameButton>
+                      <GameButton tone="danger" onClick={() => attempt(false)}>
+                        Try Again
+                      </GameButton>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">

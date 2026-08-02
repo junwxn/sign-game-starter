@@ -154,7 +154,7 @@ function SignGame() {
             setScene("play");
           }}
           onPractise={() => {
-            setFocusSigns(single.weakSigns.length ? single.weakSigns : ["hello"]);
+            setFocusSigns(single.weakSigns.length ? single.weakSigns : ["good"]);
             setScene("library");
           }}
           onMenu={() => setScene("menu")}

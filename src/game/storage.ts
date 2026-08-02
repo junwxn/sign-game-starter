@@ -55,7 +55,7 @@ export type SaveData = {
 };
 
 export const defaultSettings: Settings = {
-  inputMode: "keyboard",
+  inputMode: "camera",
   difficulty: "normal",
   battleMode: "hard",
   sound: true,
@@ -74,7 +74,7 @@ const defaultSave: SaveData = {
   level: 1,
   settings: defaultSettings,
   mastery: {},
-  favourites: ["hello", "help"],
+  favourites: ["coffee", "good"],
   lastSingle: null,
   lastMulti: null,
   localVersus: null,
